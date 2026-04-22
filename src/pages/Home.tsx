@@ -42,7 +42,7 @@ export default function Home() {
             transition={{ duration: 0.8, ease: 'easeOut' }}
           >
             <span className="inline-block py-1 px-3 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-sm font-medium tracking-widest uppercase mb-6">
-              Tripppe 2.0 (WIP)
+              Tripe 2.0
             </span>
             <h1 className="text-5xl md:text-7xl font-bold tracking-tighter mb-6 leading-tight">
               {t('home.hero_title')}
