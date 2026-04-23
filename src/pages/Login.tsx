@@ -12,8 +12,7 @@ export default function Login() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const navigate = useNavigate();
-  console.log('Login mounted');
+  const navigate = useNavigate()
   const location = useLocation()
   const { enableGuestMode } = useAuth()
   const from = location.state?.from?.pathname || '/'
