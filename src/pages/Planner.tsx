@@ -882,4 +882,3 @@ export default function Planner() {
   )
 }
 
-// TO DO: fix layout
