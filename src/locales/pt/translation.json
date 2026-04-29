@@ -2,12 +2,12 @@
   "nav": {
     "explore": "Explorar",
     "planner": "Planejador",
-    "account": "Minha Conta",
+    "account": "Perfil",
     "login": "Entrar"
   },
   "home": {
     "hero_title": "Viaje melhor, planeje fácil.",
-    "hero_subtitle": "Experimente o mundo através de descobertas curadas de alto contraste.",
+    "hero_subtitle": "Experimente o mundo através de roteiros curados e design de alta fidelidade.",
     "search_placeholder": "Para onde você quer ir?",
     "search_button": "Buscar",
     "curated_picks": "Seleção Especial",
@@ -22,15 +22,45 @@
     "collaborate_title": "Colaborar",
     "collaborate_desc": "Convide amigos para editar juntos.",
     "explore_title": "Explorar",
-    "explore_desc": "Sincronize offline e caia na estrada."
+    "explore_desc": "Sincronize offline e caia na estrada.",
+    "experience_title": "Experiência Tripe",
+    "experience_subtitle": "Redefinindo como você explora o mundo.",
+    "recent_searches": "Buscas Recentes",
+    "trending_destinations_search": "Destinos em Alta",
+    "no_suggestions": "Nenhuma sugestão encontrada para \"{{query}}\""
+  },
+  "explore": {
+    "filters": "Filtros",
+    "refine": "Refine sua jornada",
+    "date_range": "Período",
+    "select_dates": "Selecionar datas",
+    "budget": "Orçamento",
+    "interests": "Interesses",
+    "apply_filters": "Aplicar Filtros",
+    "destinations_title": "Destinos",
+    "discover_subtitle": "Descubra onde sua próxima história começa.",
+    "sort_by": "Ordenar por:",
+    "relevance": "Relevância",
+    "price_low_high": "Preço: Menor para Maior",
+    "rating": "Avaliação",
+    "no_destinations": "Nenhum destino encontrado",
+    "adjust_search": "Tente ajustar sua busca ou filtros.",
+    "live_stats": "Estatísticas em Tempo Real",
+    "cultural_overview": "Visão Cultural",
+    "climate": "Clima",
+    "wind": "Vento",
+    "back_to_search": "Voltar para Busca",
+    "plan_trip_here": "Planejar Viagem aqui",
+    "popular_destinations": "Destinos Populares",
+    "loading_destination": "Carregando destino..."
   },
   "planner": {
-    "itinerary": "Itinerário",
-    "day": "Data",
-    "add_day": "Adicionar Data",
+    "itinerary": "Roteiro",
+    "day": "Dia",
+    "add_day": "Adicionar Dia",
     "check_flight": "Buscar Voo",
     "add_activity": "Adicionar Atividade",
-    "flight_lookup": "Busca de Voos Aviationstack",
+    "flight_lookup": "Busca de Voos",
     "searching": "Buscando...",
     "edit_activity": "Editar Atividade",
     "save_changes": "Salvar Alterações",
@@ -39,21 +69,55 @@
     "title": "Título",
     "location": "Local",
     "notes_optional": "Observações (Opcional)",
-    "no_activities": "Nenhuma atividade planejada para este dia ainda",
+    "no_activities": "Nenhuma atividade planejada para este dia",
     "click_add_activity": "Clique em \"Adicionar Atividade\" para começar",
-    "day_summary": "Resumo do Dia",
-    "activities_today": "Atividades Hoje",
+    "day_summary": "Status do Dia",
+    "activities_today": "Atividades de Hoje",
+    "activities_count": "{{count}} atividades",
     "schedule": "Cronograma",
-    "trip_information": "Informações da Viagem",
+    "trip_information": "Detalhes da Viagem",
     "destination": "Destino",
     "country": "País",
     "start_date": "Data de Início",
     "total_days": "Total de Dias",
     "total_activities": "Total de Atividades",
-    "travel_tips": "Dicas de Viagem",
-    "tip_1": "Planeje atividades próximas para minimizar o tempo de deslocamento",
-    "tip_2": "Reserve atrações populares com antecedência",
-    "tip_3": "Deixe tempo de folga entre as atividades",
-    "tip_4": "Seu itinerário é salvo automaticamente!"
+    "travel_tips": "Dicas Pro",
+    "tip_1": "Agrupe atividades por bairro para economizar tempo.",
+    "tip_2": "Reserve atrações populares com antecedência.",
+    "tip_3": "Deixe tempo livre para descobertas espontâneas.",
+    "tip_4": "Seu roteiro é sincronizado automaticamente!",
+    "day_pulse": "Pulso do Dia",
+    "day_checkin": "Check-in no Dia",
+    "day_done": "Concluído",
+    "day_achieved": "Meta do Dia Batida!",
+    "day_achieved_desc": "Você completou seu roteiro de hoje com sucesso.",
+    "intensity": {
+      "balanced": "Equilibrado",
+      "active": "Ativo",
+      "heavy": "Intenso"
+    },
+    "badge_unlocked": "Badge Desbloqueado: LOW CORTISOL! ⚡",
+    "profile_badge_added": "Novo Badge adicionado ao seu Perfil: LOW CORTISOL! 🏅",
+    "share_trip": "Compartilhar Roteiro",
+    "copy_link": "Copiar Link",
+    "sharing": "Compartilhando..."
+  },
+  "destinations": {
+    "positano": {
+      "tagline": "O sonho vertical da Costa Amalfitana",
+      "description": "Um labirinto de cores, escadarias íngremes e ar com aroma de limão que define a elegância mediterrânea."
+    },
+    "kyoto": {
+      "tagline": "Tradição milenar encontra a modernidade serena",
+      "description": "Experimente os tranquilos jardins Zen e santuários históricos na capital cultural do Japão."
+    },
+    "venice": {
+      "tagline": "Uma obra-prima flutuante de engenharia e arte",
+      "description": "Caminhe por ruas sem carros e pontes escondidas em uma das cidades mais únicas do mundo."
+    },
+    "santorini": {
+      "tagline": "Vistas de pôr do sol inigualáveis e beleza austera",
+      "description": "Arquitetura cicládica contra o azul profundo do Mar Egeu."
+    }
   }
 }

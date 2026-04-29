@@ -7,7 +7,7 @@
   },
   "home": {
     "hero_title": "Travel better, plan simpler.",
-    "hero_subtitle": "Experience the world through curated, high-contrast discovery.",
+    "hero_subtitle": "Experience the world through curated, high-fidelity travel discovery.",
     "search_placeholder": "Where do you want to go?",
     "search_button": "Search",
     "curated_picks": "Curated Picks",
@@ -22,15 +22,45 @@
     "collaborate_title": "Collaborate",
     "collaborate_desc": "Invite friends to edit together.",
     "explore_title": "Explore",
-    "explore_desc": "Sync offline and hit the road."
+    "explore_desc": "Sync offline and hit the road.",
+    "experience_title": "Tripe Experience",
+    "experience_subtitle": "Redefining how you explore the globe.",
+    "recent_searches": "Recent Searches",
+    "trending_destinations_search": "Trending Destinations",
+    "no_suggestions": "No suggestions found for \"{{query}}\""
+  },
+  "explore": {
+    "filters": "Filters",
+    "refine": "Refine your journey",
+    "date_range": "Date Range",
+    "select_dates": "Select dates",
+    "budget": "Budget",
+    "interests": "Interests",
+    "apply_filters": "Apply Filters",
+    "destinations_title": "Destinations",
+    "discover_subtitle": "Discover where your next story begins.",
+    "sort_by": "Sort by:",
+    "relevance": "Relevance",
+    "price_low_high": "Price: Low to High",
+    "rating": "Rating",
+    "no_destinations": "No destinations found",
+    "adjust_search": "Try adjusting your search or filters.",
+    "live_stats": "Live Statistics",
+    "cultural_overview": "Cultural Overview",
+    "climate": "Climate",
+    "wind": "Wind",
+    "back_to_search": "Back to Search",
+    "plan_trip_here": "Plan a Trip Here",
+    "popular_destinations": "Popular Destinations",
+    "loading_destination": "Loading destination..."
   },
   "planner": {
-    "itinerary": "Itinerary",
-    "day": "Date",
-    "add_day": "Add Date",
-    "check_flight": "Check Flight",
+    "itinerary": "Roteiro",
+    "day": "Day",
+    "add_day": "Add Day",
+    "check_flight": "Search Flight",
     "add_activity": "Add Activity",
-    "flight_lookup": "Aviationstack Flight Lookup",
+    "flight_lookup": "Flight Search",
     "searching": "Searching...",
     "edit_activity": "Edit Activity",
     "save_changes": "Save Changes",
@@ -41,19 +71,53 @@
     "notes_optional": "Notes (Optional)",
     "no_activities": "No activities planned for this day yet",
     "click_add_activity": "Click \"Add Activity\" to get started",
-    "day_summary": "Day Summary",
-    "activities_today": "Activities Today",
+    "day_summary": "Day Status",
+    "activities_today": "Today's Activities",
+    "activities_count": "{{count}} activities",
     "schedule": "Schedule",
-    "trip_information": "Trip Information",
+    "trip_information": "Trip Details",
     "destination": "Destination",
     "country": "Country",
     "start_date": "Start Date",
     "total_days": "Total Days",
     "total_activities": "Total Activities",
-    "travel_tips": "Travel Tips",
-    "tip_1": "Plan activities close together to minimize travel time",
-    "tip_2": "Book popular attractions in advance",
-    "tip_3": "Leave buffer time between activities",
-    "tip_4": "Save your itinerary - it's automatically saved!"
+    "travel_tips": "Pro Tips",
+    "tip_1": "Group activities by neighborhood to save time.",
+    "tip_2": "Book popular attractions in advance.",
+    "tip_3": "Leave buffer time for spontaneous finds.",
+    "tip_4": "Your itinerary is automatically synced!",
+    "day_pulse": "Day Pulse",
+    "day_checkin": "Day Check-in",
+    "day_done": "Completed",
+    "day_achieved": "Day Goal Achieved!",
+    "day_achieved_desc": "You successfully completed your itinerary for today.",
+    "intensity": {
+      "balanced": "Balanced",
+      "active": "Active",
+      "heavy": "Heavy"
+    },
+    "badge_unlocked": "Badge Unlocked: LOW CORTISOL! ⚡",
+    "profile_badge_added": "New Badge added to your Profile: LOW CORTISOL! 🏅",
+    "share_trip": "Share Trip",
+    "copy_link": "Copy Link",
+    "sharing": "Sharing..."
+  },
+  "destinations": {
+    "positano": {
+      "tagline": "The vertical dream of the Amalfi Coast",
+      "description": "A labyrinth of colors, steep stairs, and lemon-scented air that defines Mediterranean elegance."
+    },
+    "kyoto": {
+      "tagline": "Ancient tradition meets quiet modernity",
+      "description": "Experience the tranquil Zen gardens and historic shrines in Japan's cultural capital."
+    },
+    "venice": {
+      "tagline": "A floating masterpiece of engineering and art",
+      "description": "Wander through car-free streets and hidden bridges in one of the world's most unique cities."
+    },
+    "santorini": {
+      "tagline": "Unparalleled sunset vistas and stark beauty",
+      "description": "Cycladic architecture against the deep azure of the Aegean Sea."
+    }
   }
 }

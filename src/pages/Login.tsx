@@ -14,7 +14,6 @@ export default function Login() {
 
   const navigate = useNavigate()
   const location = useLocation()
-  const { enableGuestMode } = useAuth()
   const from = location.state?.from?.pathname || '/'
 
   const handleAuth = async (e: React.FormEvent) => {
@@ -47,23 +46,19 @@ export default function Login() {
     }
   }
 
-  const handleGuest = () => {
-    enableGuestMode()
-    navigate(from, { replace: true })
-  }
 
   return (
-    <div className="min-h-[calc(100vh-80px)] flex items-center justify-center p-6 bg-[#f9f9f9]">
+    <div className="min-h-[calc(100vh-80px)] flex items-center justify-center p-6 bg-background">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-md bg-white p-8 rounded-2xl shadow-xl border border-outline-variant"
+        className="w-full max-w-md bg-surface p-8 rounded-2xl shadow-xl border border-outline-variant"
       >
         <div className="text-center mb-8">
-          <h2 className="text-3xl font-bold tracking-tight mb-2">
+          <h2 className="text-3xl font-bold tracking-tight mb-2 text-on-surface">
             {isLogin ? 'Welcome back' : 'Create an account'}
           </h2>
-          <p className="text-neutral-500 text-sm">
+          <p className="text-neutral-500 dark:text-neutral-400 text-sm">
             {isLogin
               ? 'Enter your details to access your trips'
               : 'Join Tripe to plan your next journey'}
@@ -71,14 +66,14 @@ export default function Login() {
         </div>
 
         {error && (
-          <div className="bg-red-50 text-red-600 p-4 rounded-lg text-sm mb-6 border border-red-100">
+          <div className="bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 p-4 rounded-lg text-sm mb-6 border border-red-100 dark:border-red-900/50">
             {error}
           </div>
         )}
 
         <form onSubmit={handleAuth} className="space-y-5">
           <div>
-            <label className="block text-sm font-medium mb-2 text-neutral-700">
+            <label className="block text-sm font-medium mb-2 text-on-surface">
               Email Address
             </label>
             <div className="relative">
@@ -88,14 +83,14 @@ export default function Login() {
                 required
                 value={email}
                 onChange={e => setEmail(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 rounded-lg border border-outline-variant focus:outline-none focus:ring-2 focus:ring-black transition-all bg-[#fcfcfc]"
+                className="w-full pl-10 pr-4 py-3 rounded-lg border border-outline-variant focus:outline-none focus:ring-2 focus:ring-on-surface transition-all bg-background text-on-surface"
                 placeholder="name@example.com"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-2 text-neutral-700">
+            <label className="block text-sm font-medium mb-2 text-on-surface">
               Password
             </label>
             <div className="relative">
@@ -105,7 +100,7 @@ export default function Login() {
                 required
                 value={password}
                 onChange={e => setPassword(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 rounded-lg border border-outline-variant focus:outline-none focus:ring-2 focus:ring-black transition-all bg-[#fcfcfc]"
+                className="w-full pl-10 pr-4 py-3 rounded-lg border border-outline-variant focus:outline-none focus:ring-2 focus:ring-on-surface transition-all bg-background text-on-surface"
                 placeholder="••••••••"
               />
             </div>
@@ -114,33 +109,19 @@ export default function Login() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-black text-white rounded-lg py-3.5 font-medium uppercase tracking-wider text-sm hover:bg-neutral-800 transition-colors flex justify-center items-center gap-2 disabled:opacity-70"
+            className="w-full bg-on-surface text-surface rounded-lg py-3.5 font-medium uppercase tracking-wider text-sm hover:opacity-80 transition-opacity flex justify-center items-center gap-2 disabled:opacity-50"
           >
             {loading ? 'Processing...' : isLogin ? 'Sign In' : 'Sign Up'}
             {!loading && <ArrowRight className="w-4 h-4" />}
           </button>
-          
-          <div className="relative flex py-4 items-center">
-            <div className="flex-grow border-t border-neutral-200"></div>
-            <span className="flex-shrink-0 mx-4 text-neutral-400 text-xs font-bold uppercase tracking-widest">or</span>
-            <div className="flex-grow border-t border-neutral-200"></div>
-          </div>
-          
-          <button
-            type="button"
-            onClick={handleGuest}
-            className="w-full bg-white text-black border border-outline-variant rounded-lg py-3.5 font-medium uppercase tracking-wider text-sm hover:bg-neutral-50 transition-colors flex justify-center items-center"
-          >
-            Continue as Guest
-          </button>
         </form>
 
-        <div className="mt-8 text-center text-sm text-neutral-500">
+        <div className="mt-8 text-center text-sm text-neutral-500 dark:text-neutral-400">
           {isLogin ? "Don't have an account? " : 'Already have an account? '}
           <button
             type="button"
             onClick={() => setIsLogin(!isLogin)}
-            className="text-black font-semibold hover:underline"
+            className="text-on-surface font-semibold hover:underline"
           >
             {isLogin ? 'Sign up' : 'Log in'}
           </button>

@@ -1,22 +1,93 @@
-import { Compass, Globe2, Map, Search, Star, Users } from 'lucide-react'
-import { motion } from 'motion/react'
+import axios from 'axios'
+import { Clock, Compass, Globe2, Map, Search, Star, TrendingUp, Users } from 'lucide-react'
+import { AnimatePresence, motion } from 'motion/react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate } from 'react-router-dom'
-import { useState } from 'react'
 import { FEATURED_DESTINATIONS } from '../constants'
 import { cn } from '../lib/utils'
 
 export default function Home() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const navigate = useNavigate()
+  
   const [searchQuery, setSearchQuery] = useState('')
+  const [suggestions, setSuggestions] = useState<{name: string, display_name: string}[]>([])
+  const [recentSearches, setRecentSearches] = useState<string[]>([])
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false)
+  
+  const dropdownRef = useRef<HTMLDivElement>(null)
+
+  // Load recent searches from localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem('recentSearches')
+    if (saved) {
+      setRecentSearches(JSON.parse(saved))
+    }
+  }, [])
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  // Fetch Geocoding suggestions (debounced)
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setSuggestions([])
+      return
+    }
+    const timeoutId = setTimeout(async () => {
+      try {
+        const lang = i18n.language === 'pt' ? 'pt-BR' : 'en'
+        const res = await axios.get(
+          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(
+            searchQuery
+          )}&format=json&limit=5&accept-language=${lang}`
+        )
+        if (res.data && Array.isArray(res.data)) {
+          // Filter to strictly include geographical entities (cities, states, countries, etc)
+          // Excludes POIs like offices, shops, buildings (which caused companies to appear)
+          const validClasses = ['place', 'boundary']
+          const filtered = res.data.filter((item: any) => validClasses.includes(item.class))
+          
+          // Remove duplicates by name
+          const unique = Array.from(new Map(filtered.map((item: any) => [item.name, item])).values()) as any[]
+          setSuggestions(unique.map(item => ({ name: item.name, display_name: item.display_name })))
+        }
+      } catch (err) {
+        console.error('Failed to fetch suggestions', err)
+      }
+    }, 300)
+
+    return () => clearTimeout(timeoutId)
+  }, [searchQuery, i18n.language])
+
+  const saveRecentSearch = (query: string) => {
+    const updated = [query, ...recentSearches.filter(s => s !== query)].slice(0, 5)
+    setRecentSearches(updated)
+    localStorage.setItem('recentSearches', JSON.stringify(updated))
+  }
 
   const handleSearch = () => {
     if (searchQuery.trim()) {
-      navigate(`/explore?q=${encodeURIComponent(searchQuery.trim())}`)
+      saveRecentSearch(searchQuery.trim())
+      setIsDropdownOpen(false)
+      navigate(`/destination/${encodeURIComponent(searchQuery.trim())}`)
     } else {
       navigate('/explore')
     }
+  }
+
+  const handleSuggestionClick = (suggestion: string) => {
+    setSearchQuery(suggestion)
+    setIsDropdownOpen(false)
   }
 
   return (
@@ -32,17 +103,17 @@ export default function Home() {
             className="w-full h-full object-cover brightness-[0.6]"
             alt="Hero background"
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-[#f9f9f9]" />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-background" />
         </div>
 
-        <div className="relative z-10 max-w-5xl mx-auto px-6 text-center text-white mt-12">
+        <div className="relative z-10 max-w-5xl mx-auto px-6 text-center text-white mt-12 w-full">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: 'easeOut' }}
           >
             <span className="inline-block py-1 px-3 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-sm font-medium tracking-widest uppercase mb-6">
-              Tripe 2.0
+              Tripe
             </span>
             <h1 className="text-5xl md:text-7xl font-bold tracking-tighter mb-6 leading-tight">
               {t('home.hero_title')}
@@ -62,23 +133,98 @@ export default function Home() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4, duration: 0.8 }}
-            className="max-w-2xl mx-auto bg-white/10 backdrop-blur-xl p-2 rounded-2xl flex items-center shadow-2xl border border-white/20"
+            ref={dropdownRef}
+            className="relative max-w-2xl mx-auto"
           >
-            <Search className="text-white mx-4" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && handleSearch()}
-              placeholder={t('home.search_placeholder')}
-              className="w-full py-4 text-white bg-transparent focus:outline-none placeholder:text-white/60 text-lg"
-            />
-            <button 
-              onClick={handleSearch}
-              className="bg-white text-black px-8 py-4 rounded-xl font-semibold uppercase tracking-widest hover:bg-neutral-200 transition-colors hidden sm:block"
-            >
-              {t('home.search_button')}
-            </button>
+            <div className="bg-white/10 backdrop-blur-xl p-2 rounded-2xl flex items-center shadow-2xl border border-white/20 relative z-20">
+              <Search className="text-white mx-4" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={e => {
+                  setSearchQuery(e.target.value)
+                  setIsDropdownOpen(true)
+                }}
+                onFocus={() => setIsDropdownOpen(true)}
+                onKeyDown={e => e.key === 'Enter' && handleSearch()}
+                placeholder={t('home.search_placeholder')}
+                className="w-full py-4 text-white bg-transparent focus:outline-none placeholder:text-white/60 text-lg"
+              />
+              <button
+                onClick={handleSearch}
+                className="bg-white text-black px-8 py-4 rounded-xl font-semibold uppercase tracking-widest hover:bg-neutral-200 transition-colors hidden sm:block"
+              >
+                {t('home.search_button')}
+              </button>
+            </div>
+
+            {/* Smart Suggestions Dropdown */}
+            <AnimatePresence>
+              {isDropdownOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: 5 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 5 }}
+                  className="absolute top-full mt-2 left-0 w-full bg-black/80 backdrop-blur-3xl border border-white/10 rounded-2xl overflow-hidden shadow-2xl z-10 flex flex-col text-left"
+                >
+                  {searchQuery.trim() === '' ? (
+                    <div className="p-4 space-y-4">
+                      {recentSearches.length > 0 && (
+                        <div>
+                          <p className="text-[10px] uppercase tracking-[0.2em] text-white/50 mb-2 px-4 font-bold">
+                            {t('home.recent_searches')}
+                          </p>
+                          {recentSearches.map(s => (
+                            <button
+                              key={s}
+                              onClick={() => handleSuggestionClick(s)}
+                              className="w-full text-left px-4 py-3 text-white hover:bg-white/10 rounded-xl flex items-center gap-4 transition-colors"
+                            >
+                              <Clock size={16} className="text-white/40" /> {s}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                      
+                      <div>
+                        <p className="text-[10px] uppercase tracking-[0.2em] text-white/50 mb-2 px-4 font-bold mt-2">
+                          {t('home.trending_destinations_search')}
+                        </p>
+                        {FEATURED_DESTINATIONS.slice(0, 3).map(d => (
+                          <button
+                            key={d.city}
+                            onClick={() => handleSuggestionClick(d.city)}
+                            className="w-full text-left px-4 py-3 text-white hover:bg-white/10 rounded-xl flex items-center gap-4 transition-colors"
+                          >
+                            <TrendingUp size={16} className="text-white/40" /> {d.city}, {d.country}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="p-2">
+                      {suggestions.length > 0 ? (
+                        suggestions.map(s => (
+                          <button
+                            key={s.display_name}
+                            onClick={() => handleSuggestionClick(s.name)}
+                            className="w-full text-left px-4 py-3 text-white hover:bg-white/10 rounded-xl flex items-center gap-4 transition-colors"
+                          >
+                            <Search size={16} className="text-white/40 flex-shrink-0" />
+                            <div className="flex flex-col truncate">
+                              <span className="font-bold">{s.name}</span>
+                              <span className="text-xs text-white/50 truncate">{s.display_name}</span>
+                            </div>
+                          </button>
+                        ))
+                      ) : (
+                        <p className="px-6 py-4 text-white/50 text-sm">{t('home.no_suggestions', { query: searchQuery })}</p>
+                      )}
+                    </div>
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
           </motion.div>
         </div>
       </section>
@@ -135,6 +281,9 @@ export default function Home() {
                 {t('home.from')}
                 {FEATURED_DESTINATIONS[0].pricePerWeek}
               </p>
+              <p className="text-sm text-white/60 mt-2 italic">
+                {t(`destinations.${FEATURED_DESTINATIONS[0].city.toLowerCase()}.tagline`, FEATURED_DESTINATIONS[0].tagline)}
+              </p>
             </div>
           </Link>
 
@@ -164,7 +313,7 @@ export default function Home() {
                   {dest.city}, {dest.country}
                 </h3>
                 <p className="text-xs opacity-80 uppercase tracking-widest">
-                  {dest.tags[0]}
+                  {t(`destinations.${dest.city.toLowerCase()}.tagline`, dest.tagline)}
                 </p>
               </div>
             </Link>
@@ -173,15 +322,15 @@ export default function Home() {
       </section>
 
       {/* Why TripNexus Section */}
-      <section className="bg-black text-white py-32 mt-20 rounded-[3rem] mx-4 md:mx-12 overflow-hidden relative">
+      <section className="bg-black text-white dark:bg-white/5 dark:backdrop-blur-3xl dark:border dark:border-white/10 dark:text-white py-32 mt-20 rounded-[3rem] mx-4 md:mx-12 overflow-hidden relative transition-all duration-300">
         <div className="absolute top-0 right-0 w-96 h-96 bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
         <div className="max-w-7xl mx-auto px-6 md:px-12 relative z-10">
           <div className="text-center mb-20">
             <h2 className="text-4xl md:text-6xl font-bold tracking-tighter mb-4">
-              Tripe Experience
+              {t('home.experience_title')}
             </h2>
             <p className="text-white/60 text-lg">
-              Redefining how you explore the globe.
+              {t('home.experience_subtitle')}
             </p>
           </div>
 
@@ -211,7 +360,7 @@ export default function Home() {
                 title: t('home.explore_title'),
                 desc: t('home.explore_desc'),
               },
-            ].map((item, idx) => (
+              ].map((item, idx) => (
               <motion.div
                 initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
@@ -233,4 +382,3 @@ export default function Home() {
     </div>
   )
 }
-
