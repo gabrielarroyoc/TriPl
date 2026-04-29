@@ -1,4 +1,4 @@
-import { Globe, Menu, User, X, Moon, Sun } from 'lucide-react'
+import { Globe, Menu, User, X, Moon, Sun, MapPin } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
