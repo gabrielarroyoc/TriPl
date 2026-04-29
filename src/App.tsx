@@ -358,11 +358,7 @@ export default function App() {
               />
               <Route
                 path="/planner"
-                element={
-                  <ProtectedRoute>
-                    <Planner />
-                  </ProtectedRoute>
-                }
+                element={<Planner />}
               />
               <Route
                 path="/destination/:id"
