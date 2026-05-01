@@ -36,7 +36,7 @@ interface Activity {
   time: string
   title: string
   location: string
-  type: 'Activity' | 'Flight' | 'Hotel' | 'Food'
+  type: 'Activity' | 'Flight' | 'Hotel' | 'Food' | 'Restaurant'
   notes?: string
   imageUrl?: string
   isCheckedIn?: boolean
@@ -456,14 +456,14 @@ export default function Planner() {
 
   const searchFlight = async () => {
     if (!flightNumber) return
-    setLoading(true)
+    setIsSearching(true)
     try {
       const res = await axios.get(`/api/flights?flight_number=${flightNumber}`)
       setFlightData(res.data.data?.[0] || null)
     } catch (err) {
       console.error(err)
     } finally {
-      setLoading(false)
+      setIsSearching(false)
     }
   }
 
@@ -872,10 +872,10 @@ export default function Planner() {
                 />
                 <button
                   onClick={searchFlight}
-                  disabled={loading}
+                  disabled={isSearching}
                   className="bg-on-surface text-surface px-4 rounded-lg text-xs font-bold uppercase tracking-widest disabled:opacity-50 hover:opacity-80 transition-opacity"
                 >
-                  {loading ? t('planner.searching') : <Search size={16} />}
+                  {isSearching ? t('planner.searching') : <Search size={16} />}
                 </button>
               </div>
 

@@ -89,7 +89,7 @@ export default function DestinationDetails() {
   }
 
   const WeatherIcon = () => {
-    if (!weather) return <Cloud className="text-neutral-300" />
+    if (!weather?.weather?.[0]) return <Cloud className="text-neutral-300" />
     const desc = (weather.weather[0].main || weather.weather[0].description || '').toLowerCase()
     if (desc.includes('sun') || desc.includes('clear'))
       return <Sun className="text-orange-400" />

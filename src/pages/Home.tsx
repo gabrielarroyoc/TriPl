@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { Clock, Compass, Globe2, Map, Search, Star, TrendingUp, Users } from 'lucide-react'
+import { Clock, Compass, Globe2, Map as MapIcon, Search, Star, TrendingUp, Users } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -344,7 +344,7 @@ export default function Home() {
               },
               {
                 id: '02',
-                icon: Map,
+                icon: MapIcon,
                 title: t('home.customize_title'),
                 desc: t('home.customize_desc'),
               },
