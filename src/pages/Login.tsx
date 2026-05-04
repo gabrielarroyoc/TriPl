@@ -1,35 +1,53 @@
+import { zodResolver } from '@hookform/resolvers/zod'
 import { ArrowRight, Lock, Mail } from 'lucide-react'
 import { motion } from 'motion/react'
 import { useState } from 'react'
+import { useForm } from 'react-hook-form'
 import { useLocation, useNavigate } from 'react-router-dom'
+import { z } from 'zod'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../store/AuthContext'
 
+const authSchema = z.object({
+  email: z.string().email('Invalid email address'),
+  password: z.string().min(6, 'Password must be at least 6 characters'),
+})
+
+type AuthFormValues = z.infer<typeof authSchema>
+
 export default function Login() {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
   const [isLogin, setIsLogin] = useState(true)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<AuthFormValues>({
+    resolver: zodResolver(authSchema),
+  })
 
   const navigate = useNavigate()
   const location = useLocation()
   const from = location.state?.from?.pathname || '/'
 
-  const handleAuth = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const onSubmit = async (data: AuthFormValues) => {
     setLoading(true)
     setError(null)
 
     try {
       if (isLogin) {
         const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
+          email: data.email,
+          password: data.password,
         })
         if (error) throw error
       } else {
-        const { error } = await supabase.auth.signUp({ email, password })
+        const { error } = await supabase.auth.signUp({
+          email: data.email,
+          password: data.password,
+        })
         if (error) throw error
         // Optionally show a message to check their email for verification.
         setError(
@@ -61,7 +79,7 @@ export default function Login() {
           <p className="text-neutral-500 dark:text-neutral-400 text-sm">
             {isLogin
               ? 'Enter your details to access your trips'
-              : 'Join Tripe to plan your next journey'}
+              : 'Join TriPl to plan your next journey'}
           </p>
         </div>
 
@@ -71,7 +89,7 @@ export default function Login() {
           </div>
         )}
 
-        <form onSubmit={handleAuth} className="space-y-5">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
           <div>
             <label className="block text-sm font-medium mb-2 text-on-surface">
               Email Address
@@ -80,13 +98,16 @@ export default function Login() {
               <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 w-5 h-5" />
               <input
                 type="email"
-                required
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 rounded-lg border border-outline-variant focus:outline-none focus:ring-2 focus:ring-on-surface transition-all bg-background text-on-surface"
+                {...register('email')}
+                className={`w-full pl-10 pr-4 py-3 rounded-lg border focus:outline-none focus:ring-2 focus:ring-on-surface transition-all bg-background text-on-surface ${
+                  errors.email ? 'border-red-500' : 'border-outline-variant'
+                }`}
                 placeholder="name@example.com"
               />
             </div>
+            {errors.email && (
+              <p className="text-red-500 text-xs mt-1">{errors.email.message}</p>
+            )}
           </div>
 
           <div>
@@ -97,13 +118,16 @@ export default function Login() {
               <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 w-5 h-5" />
               <input
                 type="password"
-                required
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 rounded-lg border border-outline-variant focus:outline-none focus:ring-2 focus:ring-on-surface transition-all bg-background text-on-surface"
+                {...register('password')}
+                className={`w-full pl-10 pr-4 py-3 rounded-lg border focus:outline-none focus:ring-2 focus:ring-on-surface transition-all bg-background text-on-surface ${
+                  errors.password ? 'border-red-500' : 'border-outline-variant'
+                }`}
                 placeholder="••••••••"
               />
             </div>
+            {errors.password && (
+              <p className="text-red-500 text-xs mt-1">{errors.password.message}</p>
+            )}
           </div>
 
           <button

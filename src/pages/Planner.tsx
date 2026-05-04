@@ -21,7 +21,7 @@ import {
 } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import { LowCortisolIcon } from '../components/Icons'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { cn } from '../lib/utils'
 import { useTranslation } from 'react-i18next'
 import Select from 'react-select'
@@ -30,6 +30,65 @@ import { useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../store/AuthContext'
 import { useToastStore } from '../store/useToastStore'
+import useSWR from 'swr'
+import { FlightSkeleton } from '../components/Skeletons'
+
+const fetcher = (url: string) => axios.get(url).then(res => res.data)
+
+function FlightResult({ flightNumber }: { flightNumber: string }) {
+  const { data } = useSWR(`/api/flights?flight_number=${flightNumber}`, fetcher, { suspense: true })
+  const flightData = data?.data?.[0] || null
+
+  if (!flightData) return <div className="mt-6 text-sm text-center text-neutral-500">Flight not found.</div>
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="mt-6 p-4 bg-neutral-50 dark:bg-neutral-900 rounded-lg border border-neutral-100 dark:border-neutral-800"
+    >
+      <div className="flex justify-between items-center mb-4 pb-4 border-b border-neutral-200 dark:border-neutral-800">
+        <div>
+          <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-widest">
+            {flightData.airline?.name}
+          </p>
+          <h5 className="font-bold">{flightData.flight?.iata}</h5>
+        </div>
+        <span
+          className={cn(
+            'text-[10px] uppercase font-bold px-2 py-1 rounded',
+            flightData.flight_status === 'scheduled'
+              ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+              : 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
+          )}
+        >
+          {flightData.flight_status}
+        </span>
+      </div>
+      <div className="grid grid-cols-2 gap-8 text-center relative">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-neutral-300 dark:text-neutral-700">
+          <Plane size={16} className="rotate-90" />
+        </div>
+        <div>
+          <p className="text-xl font-bold">
+            {flightData.departure?.iata}
+          </p>
+          <p className="text-[10px] text-neutral-400">
+            {flightData.departure?.airport}
+          </p>
+        </div>
+        <div>
+          <p className="text-xl font-bold">
+            {flightData.arrival?.iata}
+          </p>
+          <p className="text-[10px] text-neutral-400">
+            {flightData.arrival?.airport}
+          </p>
+        </div>
+      </div>
+    </motion.div>
+  )
+}
 
 interface Activity {
   id: string
@@ -233,8 +292,7 @@ export default function Planner() {
   const [selectedDayIndex, setSelectedDayIndex] = useState(0)
   const [showFlightSearch, setShowFlightSearch] = useState(false)
   const [flightNumber, setFlightNumber] = useState('')
-  const [flightData, setFlightData] = useState<any>(null)
-  const [isSearching, setIsSearching] = useState(false)
+  const [searchedFlight, setSearchedFlight] = useState('')
 
   const fetchEditImage = async () => {
     const searchTerms = editFormData?.location || editFormData?.title
@@ -454,17 +512,9 @@ export default function Planner() {
     }
   }
 
-  const searchFlight = async () => {
+  const searchFlight = () => {
     if (!flightNumber) return
-    setIsSearching(true)
-    try {
-      const res = await axios.get(`/api/flights?flight_number=${flightNumber}`)
-      setFlightData(res.data.data?.[0] || null)
-    } catch (err) {
-      console.error(err)
-    } finally {
-      setIsSearching(false)
-    }
+    setSearchedFlight(flightNumber)
   }
 
   const isOwner = !tripId || (user && trip.ownerId === user.id)
@@ -872,59 +922,16 @@ export default function Planner() {
                 />
                 <button
                   onClick={searchFlight}
-                  disabled={isSearching}
-                  className="bg-on-surface text-surface px-4 rounded-lg text-xs font-bold uppercase tracking-widest disabled:opacity-50 hover:opacity-80 transition-opacity"
+                  className="bg-on-surface text-surface px-4 rounded-lg text-xs font-bold uppercase tracking-widest hover:opacity-80 transition-opacity"
                 >
-                  {isSearching ? t('planner.searching') : <Search size={16} />}
+                  <Search size={16} />
                 </button>
               </div>
 
-              {flightData && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="mt-6 p-4 bg-neutral-50 dark:bg-neutral-900 rounded-lg border border-neutral-100 dark:border-neutral-800"
-                >
-                  <div className="flex justify-between items-center mb-4 pb-4 border-b border-neutral-200">
-                    <div>
-                      <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-widest">
-                        {flightData.airline?.name}
-                      </p>
-                      <h5 className="font-bold">{flightData.flight?.iata}</h5>
-                    </div>
-                    <span
-                      className={cn(
-                        'text-[10px] uppercase font-bold px-2 py-1 rounded',
-                        flightData.flight_status === 'scheduled'
-                          ? 'bg-blue-100 text-blue-700'
-                          : 'bg-green-100 text-green-700',
-                      )}
-                    >
-                      {flightData.flight_status}
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-8 text-center relative">
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-neutral-300">
-                      <Plane size={16} className="rotate-90" />
-                    </div>
-                    <div>
-                      <p className="text-xl font-bold">
-                        {flightData.departure?.iata}
-                      </p>
-                      <p className="text-[10px] text-neutral-400">
-                        {flightData.departure?.airport}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-xl font-bold">
-                        {flightData.arrival?.iata}
-                      </p>
-                      <p className="text-[10px] text-neutral-400">
-                        {flightData.arrival?.airport}
-                      </p>
-                    </div>
-                  </div>
-                </motion.div>
+              {searchedFlight && (
+                <Suspense fallback={<FlightSkeleton />}>
+                  <FlightResult flightNumber={searchedFlight} />
+                </Suspense>
               )}
             </motion.div>
           )}

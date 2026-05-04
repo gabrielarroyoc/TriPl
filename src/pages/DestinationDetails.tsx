@@ -1,10 +1,15 @@
 import axios from 'axios'
-import { ArrowLeft, Cloud, CloudRain, Globe2, MapPin, Plus, Sun, Wind } from 'lucide-react'
+import { ArrowLeft, Cloud, CloudRain, Globe2, Heart, MapPin, Plus, Sun, Wind } from 'lucide-react'
 import { motion } from 'motion/react'
-import { useEffect, useState } from 'react'
+import { Suspense } from 'react'
+import useSWR from 'swr'
 import { useTranslation } from 'react-i18next'
 import { Link, useParams } from 'react-router-dom'
 import { FEATURED_DESTINATIONS } from '../constants'
+import { useDestinationsStore } from '../store/useStore'
+import { DestinationSkeleton } from '../components/Skeletons'
+
+const fetcher = (url: string) => axios.get(url).then(res => res.data)
 
 interface WikiData {
   title: string
@@ -15,62 +20,28 @@ interface WikiData {
   coordinates?: { lat: number; lon: number }
 }
 
-export default function DestinationDetails() {
+function DestinationContent() {
   const { id } = useParams()
   const { t, i18n } = useTranslation()
-  const [wikiData, setWikiData] = useState<WikiData | null>(null)
-  const [weather, setWeather] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(false)
+  const { isSaved, toggleDestination } = useDestinationsStore()
 
-  useEffect(() => {
-    async function fetchData() {
-      if (!id) return
-      setLoading(true)
-      setError(false)
-      
-      try {
-        // Fetch Wikipedia data based on current language
-        const lang = i18n.language === 'pt' ? 'pt' : 'en'
-        const wikiRes = await axios.get(
-          `https://${lang}.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(id)}`
-        )
-        setWikiData(wikiRes.data)
+  const lang = i18n.language === 'pt' ? 'pt' : 'en'
 
-        // Try to fetch weather
-        const weatherRes = await axios.get(`/api/weather?city=${encodeURIComponent(id)}`)
-        setWeather(weatherRes.data)
-      } catch (err) {
-        console.error('Failed to fetch destination data', err)
-        setError(true)
-      } finally {
-        setLoading(false)
-      }
-    }
+  // Fetch Wikipedia data using SWR and Suspense
+  const { data: wikiData } = useSWR<WikiData>(
+    id ? `https://${lang}.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(id)}` : null,
+    fetcher,
+    { suspense: true }
+  )
 
-    fetchData()
-  }, [id, i18n.language])
+  // Try to fetch weather using SWR and Suspense
+  const { data: weather } = useSWR(
+    id ? `/api/weather?city=${encodeURIComponent(id)}` : null,
+    fetcher,
+    { suspense: true }
+  )
 
-  if (loading) {
-    return (
-      <div className="max-w-7xl mx-auto px-6 md:px-12 py-32 flex flex-col items-center justify-center space-y-6">
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
-          className="w-16 h-16 rounded-full border-4 border-neutral-100 dark:border-neutral-800 border-t-on-surface dark:border-t-on-surface"
-        />
-        <motion.p
-          animate={{ opacity: [0.5, 1, 0.5] }}
-          transition={{ duration: 1.5, repeat: Infinity }}
-          className="text-label-sm font-bold uppercase tracking-widest text-neutral-400"
-        >
-          {t('explore.loading_destination')}
-        </motion.p>
-      </div>
-    )
-  }
-
-  if (error || !wikiData) {
+  if (!wikiData) {
     return (
       <div className="max-w-7xl mx-auto px-6 md:px-12 py-32 text-center space-y-6">
         <Globe2 className="w-16 h-16 mx-auto text-neutral-200" />
@@ -97,7 +68,6 @@ export default function DestinationDetails() {
     return <Cloud className="text-neutral-400" />
   }
 
-  // Fallback image if wiki doesn't provide one
   const imageUrl =
     wikiData.originalimage?.source || wikiData.thumbnail?.source ||
     'https://images.unsplash.com/photo-1488085061387-422e29b40080?auto=format&fit=crop&q=80&w=1000'
@@ -133,6 +103,32 @@ export default function DestinationDetails() {
             </span>
             <h1 className="text-h1 mt-2">{wikiData.title}</h1>
           </div>
+          
+          <button
+            onClick={() => {
+              const destObj = FEATURED_DESTINATIONS.find(
+                d => d.city.toLowerCase() === (id || '').toLowerCase()
+              ) || {
+                city: wikiData.title || id || '',
+                country: '',
+                tagline: wikiData.description || '',
+                description: wikiData.extract || '',
+                pricePerWeek: 0,
+                tags: [],
+                image: imageUrl,
+                lat: wikiData.coordinates?.lat || 0,
+                lng: wikiData.coordinates?.lon || 0,
+              }
+              toggleDestination(destObj)
+            }}
+            className="flex items-center gap-3 bg-surface border border-outline-variant px-6 py-3 rounded-xl hover:border-on-surface transition-all font-bold uppercase tracking-widest text-sm"
+          >
+            <Heart 
+              size={18} 
+              className={isSaved(wikiData.title || id || '') ? 'fill-current text-red-500' : ''} 
+            />
+            {isSaved(wikiData.title || id || '') ? 'Saved to My Destinations' : 'Save Destination'}
+          </button>
 
           {/* APIs: Weather Widget */}
           <div className="bg-surface border border-outline-variant p-8 rounded-2xl space-y-6 shadow-sm">
@@ -223,5 +219,13 @@ export default function DestinationDetails() {
         </div>
       </section>
     </div>
+  )
+}
+
+export default function DestinationDetails() {
+  return (
+    <Suspense fallback={<DestinationSkeleton />}>
+      <DestinationContent />
+    </Suspense>
   )
 }

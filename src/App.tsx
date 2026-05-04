@@ -15,6 +15,7 @@ import DestinationDetails from './pages/DestinationDetails'
 import Explore from './pages/Explore'
 import Home from './pages/Home'
 import Login from './pages/Login'
+import MyDestinations from './pages/MyDestinations'
 import Planner from './pages/Planner'
 import { AuthProvider, useAuth } from './store/AuthContext'
 import { ToastContainer } from './components/ToastContainer'
@@ -38,13 +39,14 @@ function Navbar() {
   const navLinks = [
     { name: t('nav.explore'), path: '/explore' },
     { name: t('nav.planner'), path: '/planner' },
+    { name: t('nav.destinations'), path: '/destinations' },
   ]
 
   return (
     <nav className="fixed top-0 w-full z-50 border-b border-outline-variant bg-surface/80 dark:bg-black/50 backdrop-blur-xl transition-colors duration-300">
       <div className="max-w-7xl mx-auto flex justify-between items-center h-20 px-6 md:px-12">
         <Link to="/" className="text-2xl font-bold tracking-tighter text-on-surface">
-          Tripe
+          TriPl
         </Link>
 
         <div className="hidden md:flex items-center gap-8">
@@ -297,7 +299,7 @@ function Footer() {
   return (
     <footer className="w-full border-t border-outline-variant bg-background transition-colors duration-300 py-12 px-6 md:px-12 mt-auto">
       <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
-        <div className="text-lg font-bold text-on-surface">Tripe</div>
+        <div className="text-lg font-bold text-on-surface">TriPl</div>
         <div className="flex gap-8">
           <a
             href="#"
@@ -319,7 +321,7 @@ function Footer() {
           </a>
         </div>
         <p className="text-xs text-neutral-400">
-          © 2026 Tripe. Designed for the organized traveler.
+          © 2026 TriPl. Designed for the organized traveler.
         </p>
       </div>
     </footer>
@@ -359,6 +361,14 @@ export default function App() {
               <Route
                 path="/planner"
                 element={<Planner />}
+              />
+              <Route
+                path="/destinations"
+                element={
+                  <ProtectedRoute>
+                    <MyDestinations />
+                  </ProtectedRoute>
+                }
               />
               <Route
                 path="/destination/:id"

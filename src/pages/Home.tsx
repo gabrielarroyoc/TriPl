@@ -1,18 +1,22 @@
-import axios from 'axios'
 import { Clock, Compass, Globe2, Map as MapIcon, Search, Star, TrendingUp, Users } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, Suspense } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate } from 'react-router-dom'
 import { FEATURED_DESTINATIONS } from '../constants'
 import { cn } from '../lib/utils'
+import useSWR from 'swr'
+import axios from 'axios'
+import { SearchDropdownSkeleton } from '../components/Skeletons'
+
+import { AutocompleteResults } from '../components/AutocompleteResults'
 
 export default function Home() {
   const { t, i18n } = useTranslation()
   const navigate = useNavigate()
   
   const [searchQuery, setSearchQuery] = useState('')
-  const [suggestions, setSuggestions] = useState<{name: string, display_name: string}[]>([])
+  const [debouncedQuery, setDebouncedQuery] = useState('')
   const [recentSearches, setRecentSearches] = useState<string[]>([])
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   
@@ -37,37 +41,14 @@ export default function Home() {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  // Fetch Geocoding suggestions (debounced)
+  // Debounce the search query to prevent excessive Suspense fallbacks
+  // Increased to 800ms to wait until the user finishes typing
   useEffect(() => {
-    if (!searchQuery.trim()) {
-      setSuggestions([])
-      return
-    }
-    const timeoutId = setTimeout(async () => {
-      try {
-        const lang = i18n.language === 'pt' ? 'pt-BR' : 'en'
-        const res = await axios.get(
-          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(
-            searchQuery
-          )}&format=json&limit=5&accept-language=${lang}`
-        )
-        if (res.data && Array.isArray(res.data)) {
-          // Filter to strictly include geographical entities (cities, states, countries, etc)
-          // Excludes POIs like offices, shops, buildings (which caused companies to appear)
-          const validClasses = ['place', 'boundary']
-          const filtered = res.data.filter((item: any) => validClasses.includes(item.class))
-          
-          // Remove duplicates by name
-          const unique = Array.from(new Map(filtered.map((item: any) => [item.name, item])).values()) as any[]
-          setSuggestions(unique.map(item => ({ name: item.name, display_name: item.display_name })))
-        }
-      } catch (err) {
-        console.error('Failed to fetch suggestions', err)
-      }
-    }, 300)
-
-    return () => clearTimeout(timeoutId)
-  }, [searchQuery, i18n.language])
+    const timer = setTimeout(() => {
+      setDebouncedQuery(searchQuery)
+    }, 800)
+    return () => clearTimeout(timer)
+  }, [searchQuery])
 
   const saveRecentSearch = (query: string) => {
     const updated = [query, ...recentSearches.filter(s => s !== query)].slice(0, 5)
@@ -112,9 +93,7 @@ export default function Home() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: 'easeOut' }}
           >
-            <span className="inline-block py-1 px-3 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-sm font-medium tracking-widest uppercase mb-6">
-              Tripe
-            </span>
+              TriPl
             <h1 className="text-5xl md:text-7xl font-bold tracking-tighter mb-6 leading-tight">
               {t('home.hero_title')}
             </h1>
@@ -202,23 +181,28 @@ export default function Home() {
                       </div>
                     </div>
                   ) : (
-                    <div className="p-2">
-                      {suggestions.length > 0 ? (
-                        suggestions.map(s => (
-                          <button
-                            key={s.display_name}
-                            onClick={() => handleSuggestionClick(s.name)}
-                            className="w-full text-left px-4 py-3 text-white hover:bg-white/10 rounded-xl flex items-center gap-4 transition-colors"
-                          >
-                            <Search size={16} className="text-white/40 flex-shrink-0" />
-                            <div className="flex flex-col truncate">
-                              <span className="font-bold">{s.name}</span>
-                              <span className="text-xs text-white/50 truncate">{s.display_name}</span>
-                            </div>
-                          </button>
-                        ))
+                    <div className="p-2 relative min-h-[100px]">
+                      {debouncedQuery.trim() === '' ? (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <div className="w-6 h-6 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                        </div>
                       ) : (
-                        <p className="px-6 py-4 text-white/50 text-sm">{t('home.no_suggestions', { query: searchQuery })}</p>
+                        <Suspense fallback={<div className="p-4 space-y-4">
+                          <div className="flex items-center gap-3">
+                            <Search size={16} className="text-white/20" />
+                            <div className="h-4 w-48 bg-white/10 rounded animate-pulse"></div>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <Search size={16} className="text-white/20" />
+                            <div className="h-4 w-32 bg-white/10 rounded animate-pulse"></div>
+                          </div>
+                        </div>}>
+                          <AutocompleteResults 
+                            query={debouncedQuery} 
+                            lang={i18n.language === 'pt' ? 'pt-BR' : 'en'} 
+                            onSelect={handleSuggestionClick} 
+                          />
+                        </Suspense>
                       )}
                     </div>
                   )}
