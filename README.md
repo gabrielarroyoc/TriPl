@@ -1,4 +1,4 @@
-# Tripe
+# TriPl
 
 A minimalist, high-contrast travel planning platform built with React, Vite, and Tailwind CSS. 
 
