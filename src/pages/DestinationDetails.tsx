@@ -1,10 +1,17 @@
 import axios from 'axios'
-import { ArrowLeft, Cloud, CloudRain, Globe2, MapPin, Plus, Sun, Wind } from 'lucide-react'
+import { ArrowLeft, Cloud, CloudRain, Globe2, Heart, MapPin, Plus, Sun, Wind } from 'lucide-react'
 import { motion } from 'motion/react'
-import { useEffect, useState } from 'react'
+import { Suspense } from 'react'
+import useSWR from 'swr'
 import { useTranslation } from 'react-i18next'
 import { Link, useParams } from 'react-router-dom'
 import { FEATURED_DESTINATIONS } from '../constants'
+import { useDestinationsStore } from '../store/useStore'
+import { DestinationSkeleton } from '../components/Skeletons'
+import { DestinationCard } from '../components/DestinationCard'
+import { Badge, Button, Card } from '../components/ui'
+
+const fetcher = (url: string) => axios.get(url).then(res => res.data)
 
 interface WikiData {
   title: string
@@ -15,89 +22,55 @@ interface WikiData {
   coordinates?: { lat: number; lon: number }
 }
 
-export default function DestinationDetails() {
+function DestinationContent() {
   const { id } = useParams()
   const { t, i18n } = useTranslation()
-  const [wikiData, setWikiData] = useState<WikiData | null>(null)
-  const [weather, setWeather] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(false)
+  const { isSaved, toggleDestination } = useDestinationsStore()
 
-  useEffect(() => {
-    async function fetchData() {
-      if (!id) return
-      setLoading(true)
-      setError(false)
-      
-      try {
-        // Fetch Wikipedia data based on current language
-        const lang = i18n.language === 'pt' ? 'pt' : 'en'
-        const wikiRes = await axios.get(
-          `https://${lang}.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(id)}`
-        )
-        setWikiData(wikiRes.data)
+  const lang = i18n.language === 'pt' ? 'pt' : 'en'
 
-        // Try to fetch weather
-        const weatherRes = await axios.get(`/api/weather?city=${encodeURIComponent(id)}`)
-        setWeather(weatherRes.data)
-      } catch (err) {
-        console.error('Failed to fetch destination data', err)
-        setError(true)
-      } finally {
-        setLoading(false)
-      }
-    }
+  // Fetch Wikipedia data using SWR and Suspense
+  const { data: wikiData } = useSWR<WikiData>(
+    id ? `https://${lang}.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(id)}` : null,
+    fetcher,
+    { suspense: true }
+  )
 
-    fetchData()
-  }, [id, i18n.language])
+  // Try to fetch weather using SWR and Suspense
+  const { data: weather } = useSWR(
+    id ? `/api/weather?city=${encodeURIComponent(id)}` : null,
+    fetcher,
+    { suspense: true }
+  )
 
-  if (loading) {
-    return (
-      <div className="max-w-7xl mx-auto px-6 md:px-12 py-32 flex flex-col items-center justify-center space-y-6">
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
-          className="w-16 h-16 rounded-full border-4 border-neutral-100 dark:border-neutral-800 border-t-on-surface dark:border-t-on-surface"
-        />
-        <motion.p
-          animate={{ opacity: [0.5, 1, 0.5] }}
-          transition={{ duration: 1.5, repeat: Infinity }}
-          className="text-label-sm font-bold uppercase tracking-widest text-neutral-400"
-        >
-          {t('explore.loading_destination')}
-        </motion.p>
-      </div>
-    )
-  }
-
-  if (error || !wikiData) {
+  if (!wikiData) {
     return (
       <div className="max-w-7xl mx-auto px-6 md:px-12 py-32 text-center space-y-6">
-        <Globe2 className="w-16 h-16 mx-auto text-neutral-200" />
+        <Globe2 className="w-16 h-16 mx-auto text-primary" />
         <h2 className="text-h2">{t('explore.no_destinations')}</h2>
-        <p className="text-neutral-500 max-w-md mx-auto">
+        <p className="text-outline max-w-md mx-auto">
           {t('explore.adjust_search')}
         </p>
-        <Link
+        <Button
+          as={Link}
           to="/"
-          className="inline-block mt-8 bg-on-surface text-surface px-8 py-4 rounded-xl font-bold uppercase tracking-widest hover:opacity-80 transition-opacity"
+          className="mt-4"
         >
           {t('explore.back_to_search')}
-        </Link>
+        </Button>
       </div>
     )
   }
 
   const WeatherIcon = () => {
-    if (!weather) return <Cloud className="text-neutral-300" />
+    if (!weather?.weather?.[0]) return <Cloud className="text-primary/35" />
     const desc = (weather.weather[0].main || weather.weather[0].description || '').toLowerCase()
     if (desc.includes('sun') || desc.includes('clear'))
       return <Sun className="text-orange-400" />
     if (desc.includes('rain')) return <CloudRain className="text-blue-400" />
-    return <Cloud className="text-neutral-400" />
+    return <Cloud className="text-primary/50" />
   }
 
-  // Fallback image if wiki doesn't provide one
   const imageUrl =
     wikiData.originalimage?.source || wikiData.thumbnail?.source ||
     'https://images.unsplash.com/photo-1488085061387-422e29b40080?auto=format&fit=crop&q=80&w=1000'
@@ -106,7 +79,7 @@ export default function DestinationDetails() {
     <div className="max-w-7xl mx-auto px-6 md:px-12 py-12 space-y-12">
       <Link
         to="/"
-        className="inline-flex items-center gap-2 text-label-sm font-bold uppercase tracking-widest text-neutral-400 hover:text-on-surface transition-colors"
+        className="inline-flex items-center gap-2 text-label-sm text-outline hover:text-primary transition-colors"
       >
         <ArrowLeft size={16} /> {t('explore.back_to_search')}
       </Link>
@@ -116,7 +89,7 @@ export default function DestinationDetails() {
         <motion.div
           initial={{ opacity: 0, scale: 0.98 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="aspect-[4/5] rounded-2xl overflow-hidden bg-neutral-100 border border-outline-variant sticky top-32"
+          className="aspect-[4/5] rounded-lg overflow-hidden bg-primary-container border border-outline-variant sticky top-32 shadow-xl shadow-blue-950/10"
         >
           <img
             src={imageUrl}
@@ -128,24 +101,50 @@ export default function DestinationDetails() {
         {/* Content */}
         <div className="space-y-10">
           <div>
-            <span className="text-label-sm font-bold text-neutral-400 uppercase tracking-[0.2em]">
+            <Badge>
               {wikiData.description || 'Destination'}
-            </span>
+            </Badge>
             <h1 className="text-h1 mt-2">{wikiData.title}</h1>
           </div>
+          
+          <Button
+            variant="secondary"
+            onClick={() => {
+              const destObj = FEATURED_DESTINATIONS.find(
+                d => d.city.toLowerCase() === (id || '').toLowerCase()
+              ) || {
+                city: wikiData.title || id || '',
+                country: '',
+                tagline: wikiData.description || '',
+                description: wikiData.extract || '',
+                pricePerWeek: 0,
+                tags: [],
+                image: imageUrl,
+                lat: wikiData.coordinates?.lat || 0,
+                lng: wikiData.coordinates?.lon || 0,
+              }
+              toggleDestination(destObj)
+            }}
+          >
+            <Heart 
+              size={18} 
+              className={isSaved(wikiData.title || id || '') ? 'fill-current text-red-500' : ''} 
+            />
+            {isSaved(wikiData.title || id || '') ? 'Saved to My Destinations' : 'Save Destination'}
+          </Button>
 
           {/* APIs: Weather Widget */}
-          <div className="bg-surface border border-outline-variant p-8 rounded-2xl space-y-6 shadow-sm">
+          <Card className="p-6 space-y-6">
             <h3 className="text-h3 border-b border-outline-variant pb-4 text-on-surface">
               {t('explore.live_stats')}
             </h3>
             <div className="grid grid-cols-2 gap-8">
               <div className="flex items-center gap-4">
-                <div className="bg-neutral-50 dark:bg-neutral-800/50 p-4 rounded-xl">
+                <div className="bg-primary-container p-4 rounded-lg">
                   <WeatherIcon />
                 </div>
                 <div>
-                  <p className="text-label-sm text-neutral-400 uppercase font-bold">
+                  <p className="text-label-sm text-outline">
                     {t('explore.climate')}
                   </p>
                   <p className="text-xl font-bold">
@@ -154,11 +153,11 @@ export default function DestinationDetails() {
                 </div>
               </div>
               <div className="flex items-center gap-4">
-                <div className="bg-neutral-50 dark:bg-neutral-800/50 p-4 rounded-xl">
-                  <Wind className="text-blue-200" />
+                <div className="bg-primary-container p-4 rounded-lg">
+                  <Wind className="text-primary" />
                 </div>
                 <div>
-                  <p className="text-label-sm text-neutral-400 uppercase font-bold">
+                  <p className="text-label-sm text-outline">
                     {t('explore.wind')}
                   </p>
                   <p className="text-xl font-bold">
@@ -167,15 +166,15 @@ export default function DestinationDetails() {
                 </div>
               </div>
             </div>
-          </div>
+          </Card>
 
           <div className="space-y-6">
             <h3 className="text-h3">{t('explore.cultural_overview')}</h3>
-            <p className="text-neutral-600 text-base md:text-lg leading-relaxed">
+            <p className="text-outline text-base md:text-lg leading-relaxed">
               {wikiData.extract}
             </p>
             {wikiData.coordinates && (
-              <p className="text-sm text-neutral-400 flex items-center gap-2 pt-4">
+              <p className="text-sm text-outline flex items-center gap-2 pt-4">
                 <MapPin size={16} /> Coordinates: {wikiData.coordinates.lat},{' '}
                 {wikiData.coordinates.lon}
               </p>
@@ -183,12 +182,14 @@ export default function DestinationDetails() {
           </div>
 
           <div className="flex flex-col sm:flex-row gap-4 pt-6">
-            <Link
+            <Button
+              as={Link}
               to="/planner"
-              className="flex-1 bg-black text-white py-4 rounded-xl font-bold uppercase tracking-widest hover:bg-neutral-800 transition-all shadow-lg active:scale-95 flex items-center justify-center gap-3"
+              size="lg"
+              className="flex-1"
             >
               <Plus size={20} /> {t('explore.plan_trip_here')}
-            </Link>
+            </Button>
           </div>
         </div>
       </div>
@@ -196,32 +197,27 @@ export default function DestinationDetails() {
       {/* Suggestions Section */}
       <section className="pt-20 border-t border-outline-variant">
         <h2 className="text-h2 mb-10">{t('explore.popular_destinations')}</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {FEATURED_DESTINATIONS.slice(0, 3).map(dest => (
-            <Link
+            <DestinationCard
               key={dest.city}
-              to={`/destination/${dest.city}`}
-              className="group space-y-4"
-            >
-              <div className="aspect-video rounded-xl overflow-hidden border border-outline-variant">
-                <img
-                  src={dest.image}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  alt={dest.city}
-                />
-              </div>
-              <div>
-                <h4 className="font-bold">
-                  {dest.city}, {dest.country}
-                </h4>
-                <p className="text-xs text-neutral-400">
-                  {t(`destinations.${dest.city.toLowerCase()}.tagline`, dest.tagline)}
-                </p>
-              </div>
-            </Link>
+              destination={{
+                ...dest,
+                tagline: t(`destinations.${dest.city.toLowerCase()}.tagline`, dest.tagline),
+              }}
+              href={`/destination/${dest.city}`}
+            />
           ))}
         </div>
       </section>
     </div>
+  )
+}
+
+export default function DestinationDetails() {
+  return (
+    <Suspense fallback={<DestinationSkeleton />}>
+      <DestinationContent />
+    </Suspense>
   )
 }

@@ -2,6 +2,7 @@
   "nav": {
     "explore": "Explore",
     "planner": "Planner",
+    "destinations": "My Destinations",
     "account": "Account",
     "login": "Log In"
   },
@@ -22,8 +23,7 @@
     "collaborate_title": "Collaborate",
     "collaborate_desc": "Invite friends to edit together.",
     "explore_title": "Explore",
-    "explore_desc": "Sync offline and hit the road.",
-    "experience_title": "Tripe Experience",
+    "experience_title": "TriPl Experience",
     "experience_subtitle": "Redefining how you explore the globe.",
     "recent_searches": "Recent Searches",
     "trending_destinations_search": "Trending Destinations",
@@ -119,5 +119,11 @@
       "tagline": "Unparalleled sunset vistas and stark beauty",
       "description": "Cycladic architecture against the deep azure of the Aegean Sea."
     }
+  },
+  "destinations": {
+    "my_destinations": "My Destinations",
+    "my_destinations_desc": "Your curated list of places to go and places you've been.",
+    "no_saved": "No destinations saved yet",
+    "explore_to_save": "Go to the Explore tab to find and save your next adventure!"
   }
 }

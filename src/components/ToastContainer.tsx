@@ -15,10 +15,10 @@ export function ToastContainer() {
             initial={{ opacity: 0, y: 50, scale: 0.9 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.2 } }}
-            className={`pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-xl shadow-2xl border backdrop-blur-md min-w-[300px]
-              ${toast.type === 'success' ? 'bg-black/90 text-white border-white/10 dark:bg-white/90 dark:text-black' : ''}
+            className={`pointer-events-auto flex min-w-[300px] items-center gap-3 rounded-lg border px-4 py-3 shadow-2xl backdrop-blur-md
+              ${toast.type === 'success' ? 'bg-primary text-white border-primary' : ''}
               ${toast.type === 'error' ? 'bg-red-500/90 text-white border-red-500/20' : ''}
-              ${toast.type === 'info' ? 'bg-blue-500/90 text-white border-blue-500/20' : ''}
+              ${toast.type === 'info' ? 'bg-on-primary-container text-white border-on-primary-container' : ''}
             `}
           >
             {toast.type === 'success' && <CheckCircle size={18} />}

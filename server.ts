@@ -43,7 +43,7 @@ async function startServer() {
       return res.json({
         data: [{
           flight_status: 'scheduled',
-          airline: { name: 'Tripe Air' },
+          airline: { name: 'TriPl Air' },
           flight: { iata: flight_number || 'TR100' },
           departure: { iata: 'JFK', airport: 'John F. Kennedy International' },
           arrival: { iata: 'HND', airport: 'Haneda Airport' }

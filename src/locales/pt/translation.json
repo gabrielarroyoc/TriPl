@@ -2,6 +2,7 @@
   "nav": {
     "explore": "Explorar",
     "planner": "Planejador",
+    "destinations": "Meus Destinos",
     "account": "Perfil",
     "login": "Entrar"
   },
@@ -22,8 +23,7 @@
     "collaborate_title": "Colaborar",
     "collaborate_desc": "Convide amigos para editar juntos.",
     "explore_title": "Explorar",
-    "explore_desc": "Sincronize offline e caia na estrada.",
-    "experience_title": "Experiência Tripe",
+    "experience_title": "Experiência TriPl",
     "experience_subtitle": "Redefinindo como você explora o mundo.",
     "recent_searches": "Buscas Recentes",
     "trending_destinations_search": "Destinos em Alta",
@@ -119,5 +119,11 @@
       "tagline": "Vistas de pôr do sol inigualáveis e beleza austera",
       "description": "Arquitetura cicládica contra o azul profundo do Mar Egeu."
     }
+  },
+  "destinations": {
+    "my_destinations": "Meus Destinos",
+    "my_destinations_desc": "Sua lista selecionada de lugares para ir e onde você já esteve.",
+    "no_saved": "Nenhum destino salvo ainda",
+    "explore_to_save": "Vá para a aba Explorar para encontrar e salvar sua próxima aventura!"
   }
 }
