@@ -60,7 +60,7 @@ export function AutocompleteResults({
   )
 
   if (!unique || unique.length === 0) {
-    return <p className={`px-6 py-4 text-sm ${isDark ? 'text-white/50' : 'text-neutral-500'}`}>{t('home.no_suggestions', { query })}</p>
+    return <p className={`px-6 py-4 text-sm ${isDark ? 'text-white/60' : 'text-outline'}`}>{t('home.no_suggestions', { query })}</p>
   }
 
   return (
@@ -69,26 +69,26 @@ export function AutocompleteResults({
         <button
           key={s.name}
           onClick={() => onSelect(s.name)}
-          className={`w-full text-left px-4 py-3 rounded-xl flex items-center gap-4 transition-colors group ${
+          className={`w-full text-left px-4 py-3 rounded-lg flex items-center gap-4 transition-colors group ${
             isDark 
               ? 'text-white hover:bg-white/10' 
-              : 'text-on-surface hover:bg-neutral-100 dark:hover:bg-neutral-800'
+              : 'text-on-surface hover:bg-primary-container'
           }`}
         >
           {s.image ? (
-            <img src={s.image} alt={s.name} className={`w-10 h-10 rounded-full object-cover border transition-colors ${
-              isDark ? 'border-white/20 group-hover:border-white/50' : 'border-neutral-200 dark:border-neutral-700'
+            <img src={s.image} alt={s.name} className={`w-10 h-10 rounded-lg object-cover border transition-colors ${
+              isDark ? 'border-white/20 group-hover:border-white/50' : 'border-outline-variant group-hover:border-primary/40'
             }`} />
           ) : (
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
-              isDark ? 'bg-white/10' : 'bg-neutral-100 dark:bg-neutral-800'
+            <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
+              isDark ? 'bg-white/10' : 'bg-primary-container'
             }`}>
-              <Search size={16} className={isDark ? 'text-white/40' : 'text-neutral-400'} />
+              <Search size={16} className={isDark ? 'text-white/50' : 'text-primary'} />
             </div>
           )}
           <div className="flex flex-col truncate">
             <span className="font-bold">{s.name}</span>
-            <span className={`text-xs truncate capitalize ${isDark ? 'text-white/50' : 'text-neutral-500'}`}>{s.display_name}</span>
+            <span className={`text-xs truncate capitalize ${isDark ? 'text-white/60' : 'text-outline'}`}>{s.display_name}</span>
           </div>
         </button>
       ))}

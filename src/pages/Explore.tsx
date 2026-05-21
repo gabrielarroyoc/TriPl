@@ -1,296 +1,280 @@
-import { motion, AnimatePresence } from "motion/react";
-import { FEATURED_DESTINATIONS } from "../constants";
-import { Search, Heart, ArrowRight, Frown, Globe2 } from "lucide-react";
-import { Link, useSearchParams } from "react-router-dom";
-import { useTranslation } from "react-i18next";
-import { useState, useMemo, useEffect, useRef, Suspense } from "react";
-import { useDestinationsStore } from "../store/useStore";
-import { AutocompleteResults } from "../components/AutocompleteResults";
-import { useNavigate } from "react-router-dom";
+import { AnimatePresence, motion } from 'motion/react'
+import { ArrowRight, Frown, Globe2, Search, SlidersHorizontal } from 'lucide-react'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
+import { AutocompleteResults } from '../components/AutocompleteResults'
+import { DestinationCard } from '../components/DestinationCard'
+import { Badge, Button, Card, EmptyState, PageHeader } from '../components/ui'
+import { FEATURED_DESTINATIONS } from '../constants'
+import { useDestinationsStore } from '../store/useStore'
 
 export default function Explore() {
-  const { t, i18n } = useTranslation();
-  const { isSaved, toggleDestination } = useDestinationsStore();
+  const { t, i18n } = useTranslation()
+  const { isSaved, toggleDestination } = useDestinationsStore()
+  const [searchParams] = useSearchParams()
+  const navigate = useNavigate()
+
+  const query = searchParams.get('q')?.toLowerCase() || ''
+  const [localQuery, setLocalQuery] = useState(query)
+  const [debouncedQuery, setDebouncedQuery] = useState(query)
+  const [activeInterests, setActiveInterests] = useState<string[]>([])
+  const [sortBy, setSortBy] = useState(t('explore.relevance'))
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false)
+  const dropdownRef = useRef<HTMLDivElement>(null)
+
   const interests = [
-    t('explore.culture', 'Culture'), 
-    t('explore.nature', 'Nature'), 
-    t('explore.culinary', 'Culinary'), 
-    t('explore.adventure', 'Adventure'), 
-    t('explore.relaxation', 'Relaxation')
-  ];
-  const [searchParams] = useSearchParams();
-  const query = searchParams.get('q')?.toLowerCase() || '';
-  const [localQuery, setLocalQuery] = useState(query);
-  const [debouncedQuery, setDebouncedQuery] = useState(query);
-  const [activeInterests, setActiveInterests] = useState<string[]>([]);
-  const [sortBy, setSortBy] = useState(t('explore.relevance'));
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-  const navigate = useNavigate();
+    t('explore.culture', 'Culture'),
+    t('explore.nature', 'Nature'),
+    t('explore.culinary', 'Culinary'),
+    t('explore.adventure', 'Adventure'),
+    t('explore.relaxation', 'Relaxation'),
+  ]
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsDropdownOpen(false);
+        setIsDropdownOpen(false)
       }
     }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      setDebouncedQuery(localQuery);
-    }, 800);
-    return () => clearTimeout(timer);
-  }, [localQuery]);
+      setDebouncedQuery(localQuery)
+    }, 600)
+    return () => clearTimeout(timer)
+  }, [localQuery])
 
   const toggleInterest = (interest: string) => {
-    setActiveInterests(prev => 
-      prev.includes(interest) ? prev.filter(i => i !== interest) : [...prev, interest]
+    setActiveInterests((current) =>
+      current.includes(interest)
+        ? current.filter((item) => item !== interest)
+        : [...current, interest],
     )
-  };
+  }
 
   const filteredDestinations = useMemo(() => {
-    let result = [...FEATURED_DESTINATIONS];
+    let result = [...FEATURED_DESTINATIONS]
 
     if (localQuery) {
-      const q = localQuery.toLowerCase();
+      const normalizedQuery = localQuery.toLowerCase()
       result = result.filter(
-        (dest) =>
-          dest.city.toLowerCase().includes(q) ||
-          dest.country.toLowerCase().includes(q) ||
-          dest.tags.some((tag) => tag.toLowerCase().includes(q))
-      );
+        (destination) =>
+          destination.city.toLowerCase().includes(normalizedQuery) ||
+          destination.country.toLowerCase().includes(normalizedQuery) ||
+          destination.tags.some((tag) => tag.toLowerCase().includes(normalizedQuery)),
+      )
     }
 
     if (activeInterests.length > 0) {
-      result = result.filter(dest => 
-        activeInterests.some(interest => 
-          // Match translated interest with English tag from constants loosely
-          dest.tags.some(tag => 
-            interest.toLowerCase().includes(tag.toLowerCase()) || 
-            tag.toLowerCase().includes(interest.toLowerCase()) ||
-            // Hardcode common mappings just in case
-            (interest.includes('Cultur') && tag === 'Culture') ||
-            (interest.includes('Natur') && tag === 'Nature') ||
-            (interest.includes('Culin') && tag === 'Culinary')
-          )
-        )
-      );
+      result = result.filter((destination) =>
+        activeInterests.some((interest) =>
+          destination.tags.some(
+            (tag) =>
+              interest.toLowerCase().includes(tag.toLowerCase()) ||
+              tag.toLowerCase().includes(interest.toLowerCase()) ||
+              (interest.includes('Cultur') && tag === 'Culture') ||
+              (interest.includes('Natur') && tag === 'Nature') ||
+              (interest.includes('Culin') && tag === 'Culinary'),
+          ),
+        ),
+      )
     }
 
     if (sortBy === t('explore.price_low_high')) {
-      result.sort((a, b) => a.pricePerWeek - b.pricePerWeek);
+      result.sort((a, b) => a.pricePerWeek - b.pricePerWeek)
     } else if (sortBy === t('explore.rating')) {
-      // Mock rating sort: sort by city name length descending just to show it changes
-      result.sort((a, b) => b.city.length - a.city.length);
+      result.sort((a, b) => b.city.length - a.city.length)
     }
 
-    return result;
-  }, [localQuery, activeInterests, sortBy, t]);
+    return result
+  }, [localQuery, activeInterests, sortBy, t])
+
+  const clearFilters = () => {
+    setLocalQuery('')
+    setActiveInterests([])
+    setSortBy(t('explore.relevance'))
+  }
 
   return (
-    <div className="max-w-7xl mx-auto px-6 md:px-12 py-12 flex flex-col md:flex-row gap-12">
-      {/* Sidebar Filters */}
-      <aside className="w-full md:w-64 flex-shrink-0 space-y-10">
-        <div className="pb-4 border-b border-outline-variant">
-          <h2 className="text-h3 mb-1">{t('explore.filters')}</h2>
-          <p className="text-label-sm text-neutral-500 uppercase tracking-widest font-bold">{t('explore.refine')}</p>
-        </div>
-
-        {/* Search Bar */}
-        <div className="space-y-4">
-          <label className="text-label-sm font-bold uppercase block">{t('home.search_placeholder', 'Search Destinations')}</label>
-          <div className="relative" ref={dropdownRef}>
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" size={18} />
-            <input 
-              type="text" 
-              value={localQuery}
-              onChange={(e) => {
-                setLocalQuery(e.target.value);
-                setIsDropdownOpen(true);
-              }}
-              onFocus={() => setIsDropdownOpen(true)}
-              placeholder="Ex: Positano, Culture..." 
-              className="w-full h-12 bg-surface text-on-surface border border-outline-variant rounded-lg pl-10 pr-4 focus:ring-1 focus:ring-on-surface outline-none"
-            />
-            
-            {/* Autocomplete Dropdown */}
-            <AnimatePresence>
-              {isDropdownOpen && localQuery.trim().length > 0 && (
-                <motion.div
-                  initial={{ opacity: 0, y: -5 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -5 }}
-                  className="absolute top-full mt-2 left-0 w-full bg-surface border border-outline-variant rounded-xl overflow-hidden shadow-2xl z-50 flex flex-col text-left"
-                >
-                  <div className="p-2 relative min-h-[100px]">
-                    {debouncedQuery.trim() === '' || debouncedQuery !== localQuery ? (
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="w-6 h-6 border-2 border-neutral-200 border-t-neutral-800 dark:border-neutral-700 dark:border-t-white rounded-full animate-spin" />
-                      </div>
-                    ) : (
-                      <Suspense fallback={<div className="p-4 space-y-4">
-                        <div className="flex items-center gap-3">
-                          <Search size={16} className="text-neutral-200 dark:text-neutral-800" />
-                          <div className="h-4 w-48 bg-neutral-100 dark:bg-neutral-800 rounded animate-pulse"></div>
-                        </div>
-                      </div>}>
-                        <AutocompleteResults 
-                          query={debouncedQuery} 
-                          lang={i18n.language === 'pt' ? 'pt-BR' : 'en'} 
-                          onSelect={(name) => {
-                            setLocalQuery(name);
-                            setIsDropdownOpen(false);
-                            navigate(`/destination/${encodeURIComponent(name)}`);
-                          }}
-                          isDark={false}
-                        />
-                      </Suspense>
-                    )}
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-        </div>
-
-        {/* Interests */}
-        <div className="space-y-4">
-          <label className="text-label-sm font-bold uppercase block">{t('explore.interests')}</label>
-          <div className="flex flex-wrap gap-2">
-            {interests.map((interest) => (
-              <button 
-                key={interest}
-                onClick={() => toggleInterest(interest)}
-                className={`px-4 py-1 border border-outline-variant rounded-full text-xs font-medium transition-colors ${
-                  activeInterests.includes(interest)
-                    ? 'bg-on-surface text-surface'
-                    : 'bg-surface text-on-surface hover:bg-neutral-100 dark:hover:bg-neutral-800'
-                }`}
-              >
-                {interest}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <button 
-          onClick={() => {
-            setLocalQuery('');
-            setActiveInterests([]);
-            setSortBy(t('explore.relevance'));
-          }}
-          className="w-full bg-surface border border-outline-variant text-on-surface py-4 font-bold uppercase tracking-widest rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-all active:scale-95"
-        >
-          {t('explore.apply_filters', 'Clear Filters')}
-        </button>
-      </aside>
-
-      {/* Main Grid */}
-      <section className="flex-1">
-        <div className="flex justify-between items-end mb-10">
-          <div>
-            <h1 className="text-h1 mb-2">{t('explore.destinations_title')}</h1>
-            <p className="text-body-lg text-neutral-500">{t('explore.discover_subtitle')}</p>
-          </div>
-          <div className="hidden md:flex items-center gap-2 text-label-sm text-neutral-500">
-            <span>{t('explore.sort_by')}</span>
-            <select 
+    <div className="mx-auto max-w-7xl px-6 py-12 md:px-12">
+      <PageHeader
+        eyebrow={<Badge>{t('explore.filters')}</Badge>}
+        title={t('explore.destinations_title')}
+        description={t('explore.discover_subtitle')}
+        action={
+          <div className="flex items-center gap-2 rounded-lg border border-outline-variant bg-surface px-3 py-2">
+            <span className="text-label-sm text-outline">{t('explore.sort_by')}</span>
+            <select
               value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-              className="bg-transparent border-none focus:ring-0 font-bold text-on-surface cursor-pointer dark:bg-surface"
+              onChange={(event) => setSortBy(event.target.value)}
+              className="bg-transparent text-sm font-bold text-on-surface"
             >
               <option>{t('explore.relevance')}</option>
               <option>{t('explore.price_low_high')}</option>
               <option>{t('explore.rating')}</option>
             </select>
           </div>
-        </div>
+        }
+      />
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {filteredDestinations.length === 0 && localQuery.trim().length > 2 ? (
-            <motion.div
-              layout
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="group bg-surface border border-outline-variant rounded-xl overflow-hidden hover:border-on-surface transition-all col-span-full lg:col-span-1"
-            >
-              <div className="h-64 relative overflow-hidden bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
-                <Globe2 size={64} className="text-neutral-300 dark:text-neutral-700" />
-              </div>
-              <div className="p-6">
-                <div className="flex justify-between items-start mb-2">
-                  <h3 className="text-h3 capitalize">{localQuery}</h3>
-                  <span className="text-xs font-bold bg-neutral-200 dark:bg-neutral-700 px-2 py-1 rounded">Web</span>
-                </div>
-                <p className="text-neutral-500 text-sm mb-6 line-clamp-2">
-                  {t('explore.plan_trip_here', 'Plan a Trip Here')}
-                </p>
-                <div className="flex items-center justify-between">
-                  <div className="flex gap-2">
-                    <span className="text-[10px] uppercase font-bold text-neutral-400 tracking-tighter border border-neutral-200 px-2 py-0.5 rounded">
-                      Explore
-                    </span>
-                  </div>
-                  <Link to={`/destination/${encodeURIComponent(localQuery.trim())}`} className="text-on-surface group-hover:translate-x-2 transition-transform">
-                    <ArrowRight size={20} />
-                  </Link>
-                </div>
-              </div>
-            </motion.div>
-          ) : filteredDestinations.length === 0 ? (
-            <div className="col-span-full py-20 text-center text-neutral-500 flex flex-col items-center">
-              <Frown size={48} className="mb-4 text-neutral-300" />
-              <h3 className="text-xl font-bold text-on-surface mb-2">{t('explore.no_destinations')}</h3>
-              <p>{t('explore.adjust_search')}</p>
+      <div className="mt-10 grid grid-cols-1 gap-8 lg:grid-cols-[280px_1fr]">
+        <Card className="h-fit p-5 lg:sticky lg:top-28">
+          <div className="mb-5 flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-container text-primary">
+              <SlidersHorizontal className="h-5 w-5" />
             </div>
-          ) : (
-            filteredDestinations.map((dest, idx) => (
-              <motion.div
-                layout
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: idx * 0.1 }}
-                key={dest.city}
-                className="group bg-surface border border-outline-variant rounded-xl overflow-hidden hover:border-on-surface transition-all"
-              >
-                <div className="h-64 relative overflow-hidden">
-                  <img src={dest.image} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" alt={dest.city} />
-                  <button 
-                    onClick={() => toggleDestination(dest)}
-                    className="absolute top-4 right-4 p-2 bg-white/10 dark:bg-black/20 backdrop-blur-md rounded-full text-white hover:bg-on-surface hover:text-surface transition-all"
+            <div>
+              <h2 className="font-bold">{t('explore.filters')}</h2>
+              <p className="text-label-sm text-outline">{t('explore.refine')}</p>
+            </div>
+          </div>
+
+          <div className="space-y-6">
+            <div>
+              <label className="mb-2 block text-label-sm text-outline">
+                {t('home.search_placeholder', 'Search Destinations')}
+              </label>
+              <div className="relative" ref={dropdownRef}>
+                <Search
+                  className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-primary"
+                  size={18}
+                />
+                <input
+                  type="text"
+                  value={localQuery}
+                  onChange={(event) => {
+                    setLocalQuery(event.target.value)
+                    setIsDropdownOpen(true)
+                  }}
+                  onFocus={() => setIsDropdownOpen(true)}
+                  placeholder="Ex: Positano, Culture..."
+                  className="h-11 w-full rounded-lg border border-outline-variant bg-background pl-10 pr-3 text-sm font-medium text-on-surface focus:border-primary"
+                />
+
+                <AnimatePresence>
+                  {isDropdownOpen && localQuery.trim().length > 0 && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -4 }}
+                      className="absolute left-0 top-full z-50 mt-2 w-full overflow-hidden rounded-lg border border-outline-variant bg-surface shadow-2xl"
+                    >
+                      <div className="min-h-[100px] p-2">
+                        {debouncedQuery.trim() === '' || debouncedQuery !== localQuery ? (
+                          <div className="flex h-24 items-center justify-center">
+                            <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary/20 border-t-primary" />
+                          </div>
+                        ) : (
+                          <Suspense
+                            fallback={
+                              <div className="space-y-3 p-4">
+                                <div className="h-4 w-40 animate-pulse rounded bg-primary-container" />
+                                <div className="h-4 w-28 animate-pulse rounded bg-primary-container" />
+                              </div>
+                            }
+                          >
+                            <AutocompleteResults
+                              query={debouncedQuery}
+                              lang={i18n.language === 'pt' ? 'pt-BR' : 'en'}
+                              onSelect={(name) => {
+                                setLocalQuery(name)
+                                setIsDropdownOpen(false)
+                                navigate(`/destination/${encodeURIComponent(name)}`)
+                              }}
+                              isDark={false}
+                            />
+                          </Suspense>
+                        )}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            </div>
+
+            <div>
+              <label className="mb-2 block text-label-sm text-outline">
+                {t('explore.interests')}
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {interests.map((interest) => (
+                  <button
+                    key={interest}
+                    onClick={() => toggleInterest(interest)}
+                    className={`rounded-md border px-3 py-1.5 text-xs font-bold transition-colors ${
+                      activeInterests.includes(interest)
+                        ? 'border-primary bg-primary text-white'
+                        : 'border-outline-variant bg-background text-outline hover:border-primary hover:text-primary'
+                    }`}
                   >
-                    <Heart size={18} className={isSaved(dest.city) ? "fill-current text-red-500" : ""} />
+                    {interest}
                   </button>
+                ))}
+              </div>
+            </div>
+
+            <Button onClick={clearFilters} variant="secondary" className="w-full">
+              {t('explore.apply_filters', 'Clear Filters')}
+            </Button>
+          </div>
+        </Card>
+
+        <section>
+          <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+            {filteredDestinations.length === 0 && localQuery.trim().length > 2 ? (
+              <Card className="overflow-hidden">
+                <div className="flex h-64 items-center justify-center bg-primary-container text-primary">
+                  <Globe2 size={64} />
                 </div>
-                <div className="p-6">
-                  <div className="flex justify-between items-start mb-2">
-                    <h3 className="text-h3">{dest.city}, {dest.country}</h3>
-                    <span className="text-lg font-bold">${dest.pricePerWeek}</span>
-                  </div>
-                  <p className="text-neutral-500 text-sm mb-6 line-clamp-2">
-                    {t(`destinations.${dest.city.toLowerCase()}.tagline`, dest.tagline)}
-                  </p>
-                  <div className="flex items-center justify-between">
-                    <div className="flex gap-2">
-                      {dest.tags.slice(0, 2).map(tag => (
-                        <span key={tag} className="text-[10px] uppercase font-bold text-neutral-400 tracking-tighter border border-neutral-200 px-2 py-0.5 rounded">
-                          {tag}
-                        </span>
-                      ))}
+                <div className="p-5">
+                  <div className="mb-3 flex items-start justify-between gap-4">
+                    <div>
+                      <h3 className="text-h3 capitalize">{localQuery}</h3>
+                      <p className="mt-1 text-sm text-outline">
+                        {t('explore.plan_trip_here', 'Plan a Trip Here')}
+                      </p>
                     </div>
-                    <Link to={`/destination/${dest.city}`} className="text-on-surface group-hover:translate-x-2 transition-transform">
-                      <ArrowRight size={20} />
-                    </Link>
+                    <Badge>Web</Badge>
                   </div>
+                  <Button as={Link} to={`/destination/${encodeURIComponent(localQuery.trim())}`}>
+                    {t('explore.plan_trip_here', 'Plan a Trip Here')}
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
                 </div>
-              </motion.div>
-            ))
-          )}
-        </div>
-      </section>
+              </Card>
+            ) : filteredDestinations.length === 0 ? (
+              <div className="xl:col-span-2">
+                <EmptyState
+                  icon={Frown}
+                  title={t('explore.no_destinations')}
+                  description={t('explore.adjust_search')}
+                />
+              </div>
+            ) : (
+              filteredDestinations.map((destination, index) => (
+                <motion.div
+                  layout
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.06 }}
+                  key={destination.city}
+                >
+                  <DestinationCard
+                    destination={destination}
+                    href={`/destination/${destination.city}`}
+                    isSaved={isSaved(destination.city)}
+                    onToggleSaved={toggleDestination}
+                  />
+                </motion.div>
+              ))
+            )}
+          </div>
+        </section>
+      </div>
     </div>
-  );
+  )
 }

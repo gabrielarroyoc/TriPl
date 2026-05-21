@@ -8,6 +8,8 @@ import { Link, useParams } from 'react-router-dom'
 import { FEATURED_DESTINATIONS } from '../constants'
 import { useDestinationsStore } from '../store/useStore'
 import { DestinationSkeleton } from '../components/Skeletons'
+import { DestinationCard } from '../components/DestinationCard'
+import { Badge, Button, Card } from '../components/ui'
 
 const fetcher = (url: string) => axios.get(url).then(res => res.data)
 
@@ -44,28 +46,29 @@ function DestinationContent() {
   if (!wikiData) {
     return (
       <div className="max-w-7xl mx-auto px-6 md:px-12 py-32 text-center space-y-6">
-        <Globe2 className="w-16 h-16 mx-auto text-neutral-200" />
+        <Globe2 className="w-16 h-16 mx-auto text-primary" />
         <h2 className="text-h2">{t('explore.no_destinations')}</h2>
-        <p className="text-neutral-500 max-w-md mx-auto">
+        <p className="text-outline max-w-md mx-auto">
           {t('explore.adjust_search')}
         </p>
-        <Link
+        <Button
+          as={Link}
           to="/"
-          className="inline-block mt-8 bg-on-surface text-surface px-8 py-4 rounded-xl font-bold uppercase tracking-widest hover:opacity-80 transition-opacity"
+          className="mt-4"
         >
           {t('explore.back_to_search')}
-        </Link>
+        </Button>
       </div>
     )
   }
 
   const WeatherIcon = () => {
-    if (!weather?.weather?.[0]) return <Cloud className="text-neutral-300" />
+    if (!weather?.weather?.[0]) return <Cloud className="text-primary/35" />
     const desc = (weather.weather[0].main || weather.weather[0].description || '').toLowerCase()
     if (desc.includes('sun') || desc.includes('clear'))
       return <Sun className="text-orange-400" />
     if (desc.includes('rain')) return <CloudRain className="text-blue-400" />
-    return <Cloud className="text-neutral-400" />
+    return <Cloud className="text-primary/50" />
   }
 
   const imageUrl =
@@ -76,7 +79,7 @@ function DestinationContent() {
     <div className="max-w-7xl mx-auto px-6 md:px-12 py-12 space-y-12">
       <Link
         to="/"
-        className="inline-flex items-center gap-2 text-label-sm font-bold uppercase tracking-widest text-neutral-400 hover:text-on-surface transition-colors"
+        className="inline-flex items-center gap-2 text-label-sm text-outline hover:text-primary transition-colors"
       >
         <ArrowLeft size={16} /> {t('explore.back_to_search')}
       </Link>
@@ -86,7 +89,7 @@ function DestinationContent() {
         <motion.div
           initial={{ opacity: 0, scale: 0.98 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="aspect-[4/5] rounded-2xl overflow-hidden bg-neutral-100 border border-outline-variant sticky top-32"
+          className="aspect-[4/5] rounded-lg overflow-hidden bg-primary-container border border-outline-variant sticky top-32 shadow-xl shadow-blue-950/10"
         >
           <img
             src={imageUrl}
@@ -98,13 +101,14 @@ function DestinationContent() {
         {/* Content */}
         <div className="space-y-10">
           <div>
-            <span className="text-label-sm font-bold text-neutral-400 uppercase tracking-[0.2em]">
+            <Badge>
               {wikiData.description || 'Destination'}
-            </span>
+            </Badge>
             <h1 className="text-h1 mt-2">{wikiData.title}</h1>
           </div>
           
-          <button
+          <Button
+            variant="secondary"
             onClick={() => {
               const destObj = FEATURED_DESTINATIONS.find(
                 d => d.city.toLowerCase() === (id || '').toLowerCase()
@@ -121,27 +125,26 @@ function DestinationContent() {
               }
               toggleDestination(destObj)
             }}
-            className="flex items-center gap-3 bg-surface border border-outline-variant px-6 py-3 rounded-xl hover:border-on-surface transition-all font-bold uppercase tracking-widest text-sm"
           >
             <Heart 
               size={18} 
               className={isSaved(wikiData.title || id || '') ? 'fill-current text-red-500' : ''} 
             />
             {isSaved(wikiData.title || id || '') ? 'Saved to My Destinations' : 'Save Destination'}
-          </button>
+          </Button>
 
           {/* APIs: Weather Widget */}
-          <div className="bg-surface border border-outline-variant p-8 rounded-2xl space-y-6 shadow-sm">
+          <Card className="p-6 space-y-6">
             <h3 className="text-h3 border-b border-outline-variant pb-4 text-on-surface">
               {t('explore.live_stats')}
             </h3>
             <div className="grid grid-cols-2 gap-8">
               <div className="flex items-center gap-4">
-                <div className="bg-neutral-50 dark:bg-neutral-800/50 p-4 rounded-xl">
+                <div className="bg-primary-container p-4 rounded-lg">
                   <WeatherIcon />
                 </div>
                 <div>
-                  <p className="text-label-sm text-neutral-400 uppercase font-bold">
+                  <p className="text-label-sm text-outline">
                     {t('explore.climate')}
                   </p>
                   <p className="text-xl font-bold">
@@ -150,11 +153,11 @@ function DestinationContent() {
                 </div>
               </div>
               <div className="flex items-center gap-4">
-                <div className="bg-neutral-50 dark:bg-neutral-800/50 p-4 rounded-xl">
-                  <Wind className="text-blue-200" />
+                <div className="bg-primary-container p-4 rounded-lg">
+                  <Wind className="text-primary" />
                 </div>
                 <div>
-                  <p className="text-label-sm text-neutral-400 uppercase font-bold">
+                  <p className="text-label-sm text-outline">
                     {t('explore.wind')}
                   </p>
                   <p className="text-xl font-bold">
@@ -163,15 +166,15 @@ function DestinationContent() {
                 </div>
               </div>
             </div>
-          </div>
+          </Card>
 
           <div className="space-y-6">
             <h3 className="text-h3">{t('explore.cultural_overview')}</h3>
-            <p className="text-neutral-600 text-base md:text-lg leading-relaxed">
+            <p className="text-outline text-base md:text-lg leading-relaxed">
               {wikiData.extract}
             </p>
             {wikiData.coordinates && (
-              <p className="text-sm text-neutral-400 flex items-center gap-2 pt-4">
+              <p className="text-sm text-outline flex items-center gap-2 pt-4">
                 <MapPin size={16} /> Coordinates: {wikiData.coordinates.lat},{' '}
                 {wikiData.coordinates.lon}
               </p>
@@ -179,12 +182,14 @@ function DestinationContent() {
           </div>
 
           <div className="flex flex-col sm:flex-row gap-4 pt-6">
-            <Link
+            <Button
+              as={Link}
               to="/planner"
-              className="flex-1 bg-black text-white py-4 rounded-xl font-bold uppercase tracking-widest hover:bg-neutral-800 transition-all shadow-lg active:scale-95 flex items-center justify-center gap-3"
+              size="lg"
+              className="flex-1"
             >
               <Plus size={20} /> {t('explore.plan_trip_here')}
-            </Link>
+            </Button>
           </div>
         </div>
       </div>
@@ -192,29 +197,16 @@ function DestinationContent() {
       {/* Suggestions Section */}
       <section className="pt-20 border-t border-outline-variant">
         <h2 className="text-h2 mb-10">{t('explore.popular_destinations')}</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {FEATURED_DESTINATIONS.slice(0, 3).map(dest => (
-            <Link
+            <DestinationCard
               key={dest.city}
-              to={`/destination/${dest.city}`}
-              className="group space-y-4"
-            >
-              <div className="aspect-video rounded-xl overflow-hidden border border-outline-variant">
-                <img
-                  src={dest.image}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  alt={dest.city}
-                />
-              </div>
-              <div>
-                <h4 className="font-bold">
-                  {dest.city}, {dest.country}
-                </h4>
-                <p className="text-xs text-neutral-400">
-                  {t(`destinations.${dest.city.toLowerCase()}.tagline`, dest.tagline)}
-                </p>
-              </div>
-            </Link>
+              destination={{
+                ...dest,
+                tagline: t(`destinations.${dest.city.toLowerCase()}.tagline`, dest.tagline),
+              }}
+              href={`/destination/${dest.city}`}
+            />
           ))}
         </div>
       </section>

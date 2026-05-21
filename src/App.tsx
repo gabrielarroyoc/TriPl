@@ -24,6 +24,7 @@ import { useEffect, useRef } from 'react'
 import { supabase } from './lib/supabase'
 import { LowCortisolIcon } from './components/Icons'
 import { cn } from './lib/utils'
+import { Button } from './components/ui'
 
 function Navbar() {
   const [isOpen, setIsOpen] = useState(false)
@@ -43,9 +44,9 @@ function Navbar() {
   ]
 
   return (
-    <nav className="fixed top-0 w-full z-50 border-b border-outline-variant bg-surface/80 dark:bg-black/50 backdrop-blur-xl transition-colors duration-300">
+    <nav className="fixed top-0 w-full z-50 border-b border-outline-variant bg-surface/90 backdrop-blur-xl transition-colors duration-300">
       <div className="max-w-7xl mx-auto flex justify-between items-center h-20 px-6 md:px-12">
-        <Link to="/" className="text-2xl font-bold tracking-tighter text-on-surface">
+        <Link to="/" className="text-2xl font-bold tracking-tight text-primary">
           TriPl
         </Link>
 
@@ -56,8 +57,8 @@ function Navbar() {
               to={link.path}
               className={`font-medium uppercase tracking-wider text-sm transition-all duration-200 ${
                 location.pathname === link.path
-                  ? 'text-on-surface border-b-2 border-on-surface pb-1'
-                  : 'text-neutral-500 hover:text-on-surface'
+                  ? 'text-primary border-b-2 border-primary pb-1'
+                  : 'text-outline hover:text-primary'
               }`}
             >
               {link.name}
@@ -68,14 +69,15 @@ function Navbar() {
 
           <button
             onClick={toggleDarkMode}
-            className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+            className="w-10 h-10 rounded-lg flex items-center justify-center text-outline hover:bg-primary-container hover:text-primary transition-colors"
+            aria-label="Toggle theme"
           >
-            {isDarkMode ? <Sun className="w-5 h-5 text-neutral-400" /> : <Moon className="w-5 h-5 text-neutral-600" />}
+            {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
           </button>
 
           <button
             onClick={toggleLanguage}
-            className="flex items-center gap-2 font-medium uppercase tracking-wider text-sm text-neutral-500 hover:text-on-surface transition-colors"
+            className="flex items-center gap-2 font-medium uppercase tracking-wider text-sm text-outline hover:text-primary transition-colors"
           >
             <Globe className="w-4 h-4" />
             {i18n.language === 'en' ? 'PT' : 'EN'}
@@ -84,16 +86,21 @@ function Navbar() {
           {user ? (
             <ProfileDropdown />
           ) : (
-            <Link
+            <Button
+              as={Link}
               to="/login"
-              className="bg-on-surface text-surface px-5 py-2.5 rounded-full font-medium uppercase tracking-wider text-xs hover:opacity-80 transition-colors"
+              size="sm"
             >
               {t('nav.login')}
-            </Link>
+            </Button>
           )}
         </div>
 
-        <button className="md:hidden" onClick={() => setIsOpen(!isOpen)}>
+        <button
+          className="md:hidden h-10 w-10 rounded-lg flex items-center justify-center text-outline hover:bg-primary-container hover:text-primary"
+          onClick={() => setIsOpen(!isOpen)}
+          aria-label="Toggle navigation"
+        >
           {isOpen ? <X /> : <Menu />}
         </button>
       </div>
@@ -113,7 +120,7 @@ function Navbar() {
                   key={link.name}
                   to={link.path}
                   onClick={() => setIsOpen(false)}
-                  className="block text-lg font-medium text-on-surface hover:opacity-80"
+                  className="block text-lg font-medium text-on-surface hover:text-primary"
                 >
                   {link.name}
                 </Link>
@@ -129,7 +136,7 @@ function Navbar() {
                     toggleLanguage()
                     setIsOpen(false)
                   }}
-                  className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-neutral-100 dark:bg-neutral-800 font-medium uppercase tracking-wider text-xs text-neutral-500 hover:text-on-surface transition-colors"
+                  className="flex items-center justify-center gap-2 py-3 px-4 rounded-lg bg-primary-container font-medium uppercase tracking-wider text-xs text-on-primary-container hover:bg-primary hover:text-white transition-colors"
                 >
                   <Globe className="w-4 h-4" />
                   {i18n.language === 'en' ? 'PT' : 'EN'}
@@ -140,7 +147,7 @@ function Navbar() {
                     toggleDarkMode()
                     setIsOpen(false)
                   }}
-                  className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-neutral-100 dark:bg-neutral-800 font-medium uppercase tracking-wider text-xs text-neutral-500 hover:text-on-surface transition-colors"
+                  className="flex items-center justify-center gap-2 py-3 px-4 rounded-lg bg-primary-container font-medium uppercase tracking-wider text-xs text-on-primary-container hover:bg-primary hover:text-white transition-colors"
                 >
                   {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
                   {isDarkMode ? 'Light' : 'Dark'}
@@ -152,7 +159,7 @@ function Navbar() {
                   <Link
                     to="/account"
                     onClick={() => setIsOpen(false)}
-                    className="flex items-center gap-2 font-medium text-on-surface"
+                    className="flex items-center gap-2 font-medium text-on-surface hover:text-primary"
                   >
                     <User className="w-5 h-5" />
                     {t('nav.account')}
@@ -161,7 +168,7 @@ function Navbar() {
                   <Link
                     to="/login"
                     onClick={() => setIsOpen(false)}
-                    className="w-full bg-on-surface text-surface px-6 py-3 rounded-xl font-medium uppercase tracking-wider text-sm text-center hover:opacity-80 transition-opacity"
+                    className="w-full bg-primary text-white px-6 py-3 rounded-lg font-medium uppercase tracking-wider text-sm text-center hover:bg-on-primary-container transition-colors"
                   >
                     {t('nav.login')}
                   </Link>
@@ -177,13 +184,13 @@ function Navbar() {
 
 function ProfileDropdown() {
   const [isOpen, setIsOpen] = useState(false)
-  const { user, signOut } = useAuth()
+  const { user, signOut, isLocalSession } = useAuth()
   const { t } = useTranslation()
   const [badges, setBadges] = useState<string[]>([])
   const dropdownRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    if (user && isOpen) {
+    if (user && isOpen && supabase && !isLocalSession) {
       const fetchBadges = async () => {
         try {
           const { data } = await supabase.from('profiles').select('badges').eq('id', user.id).single()
@@ -194,7 +201,7 @@ function ProfileDropdown() {
       }
       fetchBadges()
     }
-  }, [user, isOpen])
+  }, [user, isOpen, isLocalSession])
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -210,9 +217,10 @@ function ProfileDropdown() {
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-10 h-10 rounded-full bg-neutral-100 dark:bg-neutral-800 border border-outline-variant flex items-center justify-center hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors overflow-hidden"
+        className="w-10 h-10 rounded-lg bg-primary-container border border-primary/20 flex items-center justify-center hover:bg-primary hover:text-white transition-colors overflow-hidden"
+        aria-label="Open profile menu"
       >
-        <User className="w-5 h-5 text-neutral-600 dark:text-neutral-300" />
+        <User className="w-5 h-5" />
       </button>
 
       <AnimatePresence>
@@ -221,23 +229,25 @@ function ProfileDropdown() {
             initial={{ opacity: 0, y: 10, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 10, scale: 0.95 }}
-            className="absolute right-0 mt-4 w-72 bg-surface dark:bg-neutral-900 border border-outline-variant rounded-2xl shadow-2xl p-4 z-50"
+            className="absolute right-0 mt-4 w-72 bg-surface border border-outline-variant rounded-lg shadow-2xl p-4 z-50"
           >
             <div className="px-2 py-3 mb-4 border-b border-outline-variant">
               <p className="text-sm font-bold text-on-surface truncate">{user?.email}</p>
-              <p className="text-[10px] text-neutral-400 uppercase tracking-widest mt-0.5">Explorer Level 1</p>
+              <p className="text-[10px] text-primary uppercase tracking-widest mt-0.5">
+                {isLocalSession ? 'Local mode' : 'Explorer Level 1'}
+              </p>
             </div>
 
             <div className="space-y-4">
               {/* Badges Section */}
               <div>
-                <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-3 px-2">
+                <p className="text-[10px] font-bold text-outline uppercase tracking-widest mb-3 px-2">
                   My Badges
                 </p>
                 <div className="flex flex-wrap gap-2 px-2">
                   {badges.length > 0 ? (
                     badges.map(badge => (
-                      <div key={badge} className="p-2 bg-primary/10 rounded-xl border border-primary/20 group relative transition-all hover:scale-110" title={badge}>
+                    <div key={badge} className="p-2 bg-primary-container rounded-lg border border-primary/20 group relative transition-all hover:scale-105" title={badge}>
                         <LowCortisolIcon className="w-6 h-6 text-primary" />
                         <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-on-surface text-surface text-[8px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap">
                           {badge}
@@ -245,8 +255,8 @@ function ProfileDropdown() {
                       </div>
                     ))
                   ) : (
-                    <div className="w-full py-4 border border-dashed border-outline-variant rounded-xl flex items-center justify-center grayscale opacity-30">
-                       <LowCortisolIcon className="w-6 h-6 text-neutral-400" />
+                    <div className="w-full py-4 border border-dashed border-outline-variant rounded-lg flex items-center justify-center opacity-40">
+                       <LowCortisolIcon className="w-6 h-6 text-primary" />
                     </div>
                   )}
                 </div>
@@ -257,23 +267,23 @@ function ProfileDropdown() {
                 <Link
                   to="/planner"
                   onClick={() => setIsOpen(false)}
-                  className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors text-sm font-medium text-on-surface"
+                  className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg hover:bg-primary-container hover:text-on-primary-container transition-colors text-sm font-medium text-on-surface"
                 >
-                  <Globe className="w-4 h-4 text-neutral-500" />
+                  <Globe className="w-4 h-4 text-outline" />
                   My Trips
                 </Link>
                 <div
-                  className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl opacity-40 grayscale cursor-not-allowed text-sm font-medium text-neutral-400"
+                  className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg opacity-40 cursor-not-allowed text-sm font-medium text-outline"
                 >
-                  <MapPin className="w-4 h-4 text-neutral-500" />
+                  <MapPin className="w-4 h-4 text-outline" />
                   Saved Destinations
                 </div>
                 <Link
                   to="/account"
                   onClick={() => setIsOpen(false)}
-                  className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors text-sm font-medium text-on-surface"
+                  className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg hover:bg-primary-container hover:text-on-primary-container transition-colors text-sm font-medium text-on-surface"
                 >
-                  <User className="w-4 h-4 text-neutral-500" />
+                  <User className="w-4 h-4 text-outline" />
                   Settings
                 </Link>
               </div>
@@ -283,7 +293,7 @@ function ProfileDropdown() {
                   signOut()
                   setIsOpen(false)
                 }}
-                className="w-full mt-2 py-2.5 rounded-xl bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-xs font-bold uppercase tracking-widest hover:bg-red-100 transition-colors"
+                className="w-full mt-2 py-2.5 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-xs font-bold uppercase tracking-widest hover:bg-red-100 transition-colors"
               >
                 Sign Out
               </button>
@@ -297,30 +307,30 @@ function ProfileDropdown() {
 
 function Footer() {
   return (
-    <footer className="w-full border-t border-outline-variant bg-background transition-colors duration-300 py-12 px-6 md:px-12 mt-auto">
+    <footer className="w-full border-t border-outline-variant bg-surface transition-colors duration-300 py-10 px-6 md:px-12 mt-auto">
       <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
-        <div className="text-lg font-bold text-on-surface">TriPl</div>
+        <div className="text-lg font-bold text-primary">TriPl</div>
         <div className="flex gap-8">
           <a
             href="#"
-            className="text-xs text-neutral-500 hover:text-on-surface underline underline-offset-4 transition-colors"
+            className="text-xs text-outline hover:text-primary underline underline-offset-4 transition-colors"
           >
             Terms
           </a>
           <a
             href="#"
-            className="text-xs text-neutral-500 hover:text-on-surface underline underline-offset-4 transition-colors"
+            className="text-xs text-outline hover:text-primary underline underline-offset-4 transition-colors"
           >
             Privacy
           </a>
           <a
             href="#"
-            className="text-xs text-neutral-500 hover:text-on-surface underline underline-offset-4 transition-colors"
+            className="text-xs text-outline hover:text-primary underline underline-offset-4 transition-colors"
           >
             Support
           </a>
         </div>
-        <p className="text-xs text-neutral-400">
+        <p className="text-xs text-outline">
           © 2026 TriPl. Designed for the organized traveler.
         </p>
       </div>

@@ -5,37 +5,90 @@
 
 @theme {
   --font-sans: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
-  --color-background: #fcf9f8;
+  --color-background: #F8FAFC;
   --color-surface: #ffffff;
-  --color-on-surface: #1c1b1b;
-  --color-primary: #002622;
-  --color-primary-container: #0d3d38;
-  --color-on-primary-container: #7ba8a1;
-  --color-secondary-container: #d8e2e0;
-  --color-outline: #707977;
-  --color-outline-variant: #e8e8e8;
+  --color-on-surface: #0f172a;
+  --color-primary: #2563EB;
+  --color-primary-container: #DBEAFE;
+  --color-on-primary-container: #1E3A8A;
+  --color-secondary-container: #E0F2FE;
+  --color-outline: #64748b;
+  --color-outline-variant: #dbe3ef;
   
-  --radius-xl: 1.5rem;
-  --radius-lg: 1rem;
-  --radius-md: 0.75rem;
+  --radius-xl: 0.5rem;
+  --radius-lg: 0.5rem;
+  --radius-md: 0.375rem;
 }
 
 @layer base {
+  :root {
+    color-scheme: light;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
   body {
     @apply bg-background text-on-surface font-sans antialiased transition-colors duration-300;
   }
 
-  .dark {
-    --color-background: #0a0a0a;
-    --color-surface: #141414;
-    --color-on-surface: #ffffff;
-    --color-primary: #e8e8e8;
-    --color-primary-container: #262626;
-    --color-on-primary-container: #ffffff;
-    --color-secondary-container: #1f1f1f;
-    --color-outline: #737373;
-    --color-outline-variant: #262626;
+  ::selection {
+    @apply bg-primary text-white;
   }
+
+  button,
+  a,
+  input,
+  select,
+  textarea {
+    @apply outline-none;
+  }
+
+  a:focus-visible,
+  button:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible {
+    @apply ring-2 ring-primary ring-offset-2 ring-offset-background;
+  }
+
+  .dark {
+    color-scheme: dark;
+    --color-background: #020617;
+    --color-surface: #0f172a;
+    --color-on-surface: #F8FAFC;
+    --color-primary: #60A5FA;
+    --color-primary-container: #1E3A8A;
+    --color-on-primary-container: #DBEAFE;
+    --color-secondary-container: #172554;
+    --color-outline: #94a3b8;
+    --color-outline-variant: #1e293b;
+  }
+}
+
+.text-h1 {
+  @apply text-4xl font-bold leading-tight md:text-6xl;
+}
+
+.text-h2 {
+  @apply text-3xl font-bold leading-tight md:text-4xl;
+}
+
+.text-h3 {
+  @apply text-xl font-bold leading-snug md:text-2xl;
+}
+
+.text-body-lg {
+  @apply text-base leading-7 md:text-lg;
+}
+
+.text-label-sm {
+  @apply text-xs font-bold uppercase tracking-wider;
+}
+
+.surface-card {
+  @apply rounded-lg border border-outline-variant bg-surface shadow-sm;
 }
 
 .timeline-line {
