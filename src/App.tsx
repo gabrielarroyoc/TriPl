@@ -184,13 +184,13 @@ function Navbar() {
 
 function ProfileDropdown() {
   const [isOpen, setIsOpen] = useState(false)
-  const { user, signOut, isLocalSession } = useAuth()
+  const { user, signOut } = useAuth()
   const { t } = useTranslation()
   const [badges, setBadges] = useState<string[]>([])
   const dropdownRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    if (user && isOpen && supabase && !isLocalSession) {
+    if (user && isOpen && supabase) {
       const fetchBadges = async () => {
         try {
           const { data } = await supabase.from('profiles').select('badges').eq('id', user.id).single()
@@ -201,7 +201,7 @@ function ProfileDropdown() {
       }
       fetchBadges()
     }
-  }, [user, isOpen, isLocalSession])
+  }, [user, isOpen])
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -234,7 +234,7 @@ function ProfileDropdown() {
             <div className="px-2 py-3 mb-4 border-b border-outline-variant">
               <p className="text-sm font-bold text-on-surface truncate">{user?.email}</p>
               <p className="text-[10px] text-primary uppercase tracking-widest mt-0.5">
-                {isLocalSession ? 'Local mode' : 'Explorer Level 1'}
+                Explorer Level 1
               </p>
             </div>
 
