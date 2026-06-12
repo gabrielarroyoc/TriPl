@@ -68,7 +68,9 @@ export default function Home() {
 
   const handleSuggestionClick = (suggestion: string) => {
     setSearchQuery(suggestion)
+    saveRecentSearch(suggestion)
     setIsDropdownOpen(false)
+    navigate(`/destination/${encodeURIComponent(suggestion)}`)
   }
 
   return (
@@ -111,7 +113,7 @@ export default function Home() {
                     onFocus={() => setIsDropdownOpen(true)}
                     onKeyDown={(event) => event.key === 'Enter' && handleSearch()}
                     placeholder={t('home.search_placeholder')}
-                    className="w-full bg-transparent text-base font-medium text-on-surface placeholder:text-outline"
+                    className="w-full bg-transparent text-base font-medium !text-slate-950 caret-slate-950 placeholder:!text-slate-500"
                   />
                 </div>
                 <Button onClick={handleSearch} size="lg" className="sm:min-w-36">
@@ -125,20 +127,20 @@ export default function Home() {
                     initial={{ opacity: 0, y: 6 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: 6 }}
-                    className="absolute left-0 top-full z-20 mt-2 w-full overflow-hidden rounded-lg border border-outline-variant bg-surface text-left shadow-2xl"
+                    className="absolute left-0 top-full z-20 mt-2 w-full overflow-hidden rounded-lg border border-slate-200 bg-white text-left text-slate-950 shadow-2xl"
                   >
                     {searchQuery.trim() === '' ? (
                       <div className="p-3">
                         {recentSearches.length > 0 && (
                           <div className="mb-3">
-                            <p className="px-3 pb-2 text-label-sm text-outline">
+                            <p className="px-3 pb-2 text-label-sm text-slate-500">
                               {t('home.recent_searches')}
                             </p>
                             {recentSearches.map((search) => (
                               <button
                                 key={search}
                                 onClick={() => handleSuggestionClick(search)}
-                                className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-on-surface transition-colors hover:bg-primary-container hover:text-on-primary-container"
+                                className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium !text-slate-950 transition-colors hover:bg-blue-50 hover:!text-blue-900"
                               >
                                 <Clock size={16} className="text-primary" />
                                 {search}
@@ -147,14 +149,14 @@ export default function Home() {
                           </div>
                         )}
 
-                        <p className="px-3 pb-2 text-label-sm text-outline">
+                        <p className="px-3 pb-2 text-label-sm text-slate-500">
                           {t('home.trending_destinations_search')}
                         </p>
                         {FEATURED_DESTINATIONS.slice(0, 3).map((destination) => (
                           <button
                             key={destination.city}
                             onClick={() => handleSuggestionClick(destination.city)}
-                            className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-on-surface transition-colors hover:bg-primary-container hover:text-on-primary-container"
+                            className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium !text-slate-950 transition-colors hover:bg-blue-50 hover:!text-blue-900"
                           >
                             <TrendingUp size={16} className="text-primary" />
                             {destination.city}, {destination.country}

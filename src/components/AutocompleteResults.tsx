@@ -59,7 +59,7 @@ export function AutocompleteResults({
   )
 
   if (!unique || unique.length === 0) {
-    return <p className={`px-6 py-4 text-sm ${isDark ? 'text-white/60' : 'text-outline'}`}>{t('home.no_suggestions', { query })}</p>
+    return <p className={`px-6 py-4 text-sm ${isDark ? 'text-white/60' : '!text-slate-500'}`}>{t('home.no_suggestions', { query })}</p>
   }
 
   return (
@@ -71,23 +71,23 @@ export function AutocompleteResults({
           className={`w-full text-left px-4 py-3 rounded-lg flex items-center gap-4 transition-colors group ${
             isDark 
               ? 'text-white hover:bg-white/10' 
-              : 'text-on-surface hover:bg-primary-container'
+              : '!text-slate-950 hover:bg-blue-50 hover:!text-blue-900'
           }`}
         >
           {s.image ? (
             <img src={s.image} alt={s.name} className={`w-10 h-10 rounded-lg object-cover border transition-colors ${
-              isDark ? 'border-white/20 group-hover:border-white/50' : 'border-outline-variant group-hover:border-primary/40'
+              isDark ? 'border-white/20 group-hover:border-white/50' : 'border-slate-200 group-hover:border-blue-300'
             }`} />
           ) : (
             <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
-              isDark ? 'bg-white/10' : 'bg-primary-container'
+              isDark ? 'bg-white/10' : 'bg-blue-50'
             }`}>
-              <Search size={16} className={isDark ? 'text-white/50' : 'text-primary'} />
+              <Search size={16} className={isDark ? 'text-white/50' : 'text-blue-600'} />
             </div>
           )}
           <div className="flex flex-col truncate">
             <span className="font-bold">{s.name}</span>
-            <span className={`text-xs truncate capitalize ${isDark ? 'text-white/60' : 'text-outline'}`}>{s.display_name}</span>
+            <span className={`text-xs truncate capitalize ${isDark ? 'text-white/60' : '!text-slate-500'}`}>{s.display_name}</span>
           </div>
         </button>
       ))}
