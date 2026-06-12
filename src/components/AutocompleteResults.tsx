@@ -2,6 +2,7 @@ import axios from 'axios'
 import { Search } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import useSWR from 'swr'
+import { fetchWikipediaSummary, getWikipediaSummaryImage } from '../lib/wikipedia'
 
 export const fetchAutocomplete = async ([_, query, lang]: [string, string, string]) => {
   if (!query) return []
@@ -20,13 +21,11 @@ export const fetchAutocomplete = async ([_, query, lang]: [string, string, strin
   const enriched = await Promise.all(
     uniqueItems.map(async (item) => {
       try {
-        const wikiRes = await axios.get(
-          `https://${wikiLang}.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(item.name)}`
-        )
+        const summary = await fetchWikipediaSummary(item.name, wikiLang)
         return {
           name: item.name,
           display_name: item.display_name,
-          image: wikiRes.data?.thumbnail?.source || wikiRes.data?.originalimage?.source || null
+          image: getWikipediaSummaryImage(summary)
         }
       } catch (err) {
         return {

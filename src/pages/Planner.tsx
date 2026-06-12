@@ -21,7 +21,7 @@ import {
 } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import { LowCortisolIcon } from '../components/Icons'
-import { useEffect, useState, Suspense } from 'react'
+import { useEffect, useRef, useState, Suspense } from 'react'
 import { cn } from '../lib/utils'
 import { useTranslation } from 'react-i18next'
 import Select from 'react-select'
@@ -32,14 +32,41 @@ import { useAuth } from '../store/AuthContext'
 import { useToastStore } from '../store/useToastStore'
 import useSWR from 'swr'
 import { FlightSkeleton } from '../components/Skeletons'
+import { fetchWikipediaSummary, getWikipediaSummaryImage } from '../lib/wikipedia'
 
-const fetcher = (url: string) => axios.get(url).then(res => res.data)
+const flightFetcher = async (url: string) => {
+  try {
+    const { data } = await axios.get(url)
+    if (!data || typeof data !== 'object' || !Array.isArray(data.data)) {
+      return { data: [], requestFailed: true }
+    }
+    return data
+  } catch {
+    return { data: [], requestFailed: true }
+  }
+}
 
 function FlightResult({ flightNumber }: { flightNumber: string }) {
-  const { data } = useSWR(`/api/flights?flight_number=${flightNumber}`, fetcher, { suspense: true })
+  const { t } = useTranslation()
+  const { addToast } = useToastStore()
+  const { data } = useSWR(`/api/flights?flight_number=${flightNumber}`, flightFetcher, { suspense: true })
   const flightData = data?.data?.[0] || null
 
-  if (!flightData) return <div className="mt-6 text-sm text-center text-outline">Flight not found.</div>
+  useEffect(() => {
+    if (data?.requestFailed) {
+      addToast(t('planner.flight_lookup_error', 'Flight data is temporarily unavailable.'), 'warning')
+    }
+  }, [addToast, data?.requestFailed, t])
+
+  if (!flightData) {
+    return (
+      <div className="mt-6 rounded-lg border border-outline-variant bg-primary-container/25 p-4 text-center text-sm text-outline">
+        {data?.requestFailed
+          ? t('planner.flight_lookup_error', 'Flight data is temporarily unavailable.')
+          : t('planner.flight_not_found', 'Flight not found. Check the flight number and try again.')}
+      </div>
+    )
+  }
 
   return (
     <motion.div
@@ -159,25 +186,32 @@ function AddActivityForm({
     imageUrl: '',
   })
   const [isSearching, setIsSearching] = useState(false)
+  const { addToast } = useToastStore()
 
   const fetchImage = async () => {
     const searchTerms = formData.location || formData.title
-    if (!searchTerms) return
+    if (!searchTerms.trim()) {
+      addToast(t('planner.image_search_missing', 'Add a title or location before searching for an image.'), 'warning')
+      return
+    }
 
     setIsSearching(true)
     try {
       const lang = i18n.language === 'pt' ? 'pt' : 'en'
-      const res = await axios.get(
-        `https://${lang}.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(searchTerms)}`
-      )
-      if (res.data.originalimage?.source || res.data.thumbnail?.source) {
+      const summary = await fetchWikipediaSummary(searchTerms, lang)
+      const imageUrl = getWikipediaSummaryImage(summary)
+      if (imageUrl) {
         setFormData(prev => ({ 
           ...prev, 
-          imageUrl: res.data.originalimage?.source || res.data.thumbnail?.source 
+          imageUrl,
         }))
+        addToast(t('planner.image_search_success', 'Image added to the activity.'), 'success')
+      } else {
+        addToast(t('planner.image_search_empty', 'No image was found for this place.'), 'warning')
       }
     } catch (e) {
       console.error('Failed to fetch image', e)
+      addToast(t('planner.image_search_error', 'Could not search for an image right now.'), 'error')
     } finally {
       setIsSearching(false)
     }
@@ -294,25 +328,32 @@ export default function Planner() {
   const [flightNumber, setFlightNumber] = useState('')
   const [searchedFlight, setSearchedFlight] = useState('')
   const [isEditingImageSearch, setIsEditingImageSearch] = useState(false)
+  const autoSaveErrorShownRef = useRef(false)
 
   const fetchEditImage = async () => {
     const searchTerms = editFormData?.location || editFormData?.title
-    if (!searchTerms) return
+    if (!searchTerms?.trim()) {
+      addToast(t('planner.image_search_missing', 'Add a title or location before searching for an image.'), 'warning')
+      return
+    }
 
     setIsEditingImageSearch(true)
     try {
       const lang = i18n.language === 'pt' ? 'pt' : 'en'
-      const res = await axios.get(
-        `https://${lang}.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(searchTerms)}`
-      )
-      if (res.data.originalimage?.source || res.data.thumbnail?.source) {
+      const summary = await fetchWikipediaSummary(searchTerms, lang)
+      const imageUrl = getWikipediaSummaryImage(summary)
+      if (imageUrl) {
         setEditFormData(prev => prev ? ({ 
           ...prev, 
-          imageUrl: res.data.originalimage?.source || res.data.thumbnail?.source 
+          imageUrl,
         }) : null)
+        addToast(t('planner.image_search_success', 'Image added to the activity.'), 'success')
+      } else {
+        addToast(t('planner.image_search_empty', 'No image was found for this place.'), 'warning')
       }
     } catch (e) {
       console.error('Failed to fetch image', e)
+      addToast(t('planner.image_search_error', 'Could not search for an image right now.'), 'error')
     } finally {
       setIsEditingImageSearch(false)
     }
@@ -427,6 +468,7 @@ export default function Planner() {
           }
         } catch (err) {
           console.error("Failed to fetch shared trip", err)
+          addToast(t('planner.shared_trip_load_error', 'Could not load this shared trip. Try refreshing the page.'), 'error')
         }
       } else {
         const saved = localStorage.getItem('tripPlannerData')
@@ -440,6 +482,7 @@ export default function Planner() {
             }
           } catch (e) {
             setTrip(defaultTrip)
+            addToast(t('planner.local_trip_restore_error', 'Your saved local itinerary could not be restored, so we started a fresh one.'), 'warning')
           }
         }
       }
@@ -479,12 +522,17 @@ export default function Planner() {
     const timeout = setTimeout(async () => {
       try {
         await supabase.from('shared_trips').update({ trip_data: trip }).eq('id', tripId)
+        autoSaveErrorShownRef.current = false
       } catch (err) {
         console.error("Failed to auto-save to cloud", err)
+        if (!autoSaveErrorShownRef.current) {
+          addToast(t('planner.autosave_error', 'Could not auto-save to the shared trip. Your latest edits may still be local.'), 'warning')
+          autoSaveErrorShownRef.current = true
+        }
       }
     }, 1500)
     return () => clearTimeout(timeout)
-  }, [trip, tripId])
+  }, [addToast, t, trip, tripId])
 
   const saveTrip = (newTrip: Trip) => {
     setTrip(newTrip)
@@ -525,7 +573,10 @@ export default function Planner() {
   }
 
   const searchFlight = () => {
-    if (!flightNumber) return
+    if (!flightNumber.trim()) {
+      addToast(t('planner.flight_lookup_missing', 'Enter a flight number before searching.'), 'warning')
+      return
+    }
     setSearchedFlight(flightNumber)
   }
 
@@ -584,6 +635,7 @@ export default function Planner() {
           }
         } catch (e) {
           console.error("Failed to persist badge", e)
+          addToast(t('planner.profile_badge_error', 'Badge unlocked, but it could not be saved to your profile right now.'), 'warning')
         }
       }
     }
@@ -607,6 +659,7 @@ export default function Planner() {
     if (!newDate) return
     // check if date already exists
     if (trip.days.find(d => d.date === newDate)) {
+      addToast(t('planner.duplicate_day', 'This day already exists in your itinerary.'), 'warning')
       setShowAddDateModal(false)
       return
     }
@@ -643,6 +696,7 @@ export default function Planner() {
     newDays[dayIndex].activities = [...newDays[dayIndex].activities, activity]
     const newTrip = { ...trip, days: newDays }
     saveTrip(newTrip)
+    addToast(t('planner.activity_added', 'Activity added to your itinerary.'), 'success')
     setShowAddActivity(false)
   }
 
@@ -658,6 +712,7 @@ export default function Planner() {
     )
     const newTrip = { ...trip, days: newDays }
     saveTrip(newTrip)
+    addToast(t('planner.activity_updated', 'Activity updated.'), 'success')
     setEditingActivity(null)
     setEditFormData(null)
   }
@@ -668,6 +723,7 @@ export default function Planner() {
     newDays[dayIndex].activities = newDays[dayIndex].activities.filter(act => act.id !== activityId)
     const newTrip = { ...trip, days: newDays }
     saveTrip(newTrip)
+    addToast(t('planner.activity_deleted', 'Activity removed from your itinerary.'), 'info')
   }
 
   const currentDay = trip.days[selectedDayIndex]

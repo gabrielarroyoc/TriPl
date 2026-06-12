@@ -52,6 +52,9 @@
     "back_to_search": "Back to Search",
     "plan_trip_here": "Plan a Trip Here",
     "popular_destinations": "Popular Destinations",
+    "destination_saved": "Destination saved to your list.",
+    "destination_removed": "Destination removed from your saved list.",
+    "weather_unavailable": "Weather data is temporarily unavailable for this destination.",
     "loading_destination": "Loading destination..."
   },
   "planner": {
@@ -100,7 +103,25 @@
     "profile_badge_added": "New Badge added to your Profile: LOW CORTISOL! 🏅",
     "share_trip": "Share Trip",
     "copy_link": "Copy Link",
-    "sharing": "Sharing..."
+    "sharing": "Sharing...",
+    "flight_lookup_missing": "Enter a flight number before searching.",
+    "flight_lookup_error": "Flight data is temporarily unavailable.",
+    "flight_not_found": "Flight not found. Check the flight number and try again.",
+    "image_search_missing": "Add a title or location before searching for an image.",
+    "image_search_success": "Image added to the activity.",
+    "image_search_empty": "No image was found for this place.",
+    "image_search_error": "Could not search for an image right now.",
+    "shared_trip_load_error": "Could not load this shared trip. Try refreshing the page.",
+    "local_trip_restore_error": "Your saved local itinerary could not be restored, so we started a fresh one.",
+    "autosave_error": "Could not auto-save to the shared trip. Your latest edits may still be local.",
+    "profile_badge_error": "Badge unlocked, but it could not be saved to your profile right now.",
+    "duplicate_day": "This day already exists in your itinerary.",
+    "activity_added": "Activity added to your itinerary.",
+    "activity_updated": "Activity updated.",
+    "activity_deleted": "Activity removed from your itinerary."
+  },
+  "account": {
+    "badges_load_error": "Could not load your badges right now."
   },
   "destinations": {
     "positano": {

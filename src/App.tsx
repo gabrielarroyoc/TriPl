@@ -20,6 +20,7 @@ import Planner from './pages/Planner'
 import { AuthProvider, useAuth } from './store/AuthContext'
 import { ToastContainer } from './components/ToastContainer'
 import { useUIStore } from './store/useStore'
+import { useToastStore } from './store/useToastStore'
 import { useEffect, useRef } from 'react'
 import { supabase } from './lib/supabase'
 import { LowCortisolIcon } from './components/Icons'
@@ -186,8 +187,10 @@ function ProfileDropdown() {
   const [isOpen, setIsOpen] = useState(false)
   const { user, signOut } = useAuth()
   const { t } = useTranslation()
+  const { addToast } = useToastStore()
   const [badges, setBadges] = useState<string[]>([])
   const dropdownRef = useRef<HTMLDivElement>(null)
+  const badgeWarningShownRef = useRef(false)
 
   useEffect(() => {
     if (user && isOpen && supabase) {
@@ -195,13 +198,18 @@ function ProfileDropdown() {
         try {
           const { data } = await supabase.from('profiles').select('badges').eq('id', user.id).single()
           if (data?.badges) setBadges(data.badges)
+          badgeWarningShownRef.current = false
         } catch (e) {
           console.error(e)
+          if (!badgeWarningShownRef.current) {
+            addToast(t('account.badges_load_error', 'Could not load your badges right now.'), 'warning')
+            badgeWarningShownRef.current = true
+          }
         }
       }
       fetchBadges()
     }
-  }, [user, isOpen])
+  }, [addToast, t, user, isOpen])
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
