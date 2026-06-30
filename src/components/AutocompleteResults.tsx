@@ -71,18 +71,18 @@ export function AutocompleteResults({
           className={`w-full text-left px-4 py-3 rounded-lg flex items-center gap-4 transition-colors group ${
             isDark 
               ? 'text-white hover:bg-white/10' 
-              : '!text-slate-950 hover:bg-blue-50 hover:!text-blue-900'
+              : '!text-slate-950 hover:bg-primary-container/40 hover:!text-on-primary-container'
           }`}
         >
           {s.image ? (
             <img src={s.image} alt={s.name} className={`w-10 h-10 rounded-lg object-cover border transition-colors ${
-              isDark ? 'border-white/20 group-hover:border-white/50' : 'border-slate-200 group-hover:border-blue-300'
+              isDark ? 'border-white/20 group-hover:border-white/50' : 'border-slate-200 group-hover:border-primary/40'
             }`} />
           ) : (
             <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
-              isDark ? 'bg-white/10' : 'bg-blue-50'
+              isDark ? 'bg-white/10' : 'bg-primary-container/30'
             }`}>
-              <Search size={16} className={isDark ? 'text-white/50' : 'text-blue-600'} />
+              <Search size={16} className={isDark ? 'text-white/50' : 'text-primary'} />
             </div>
           )}
           <div className="flex flex-col truncate">

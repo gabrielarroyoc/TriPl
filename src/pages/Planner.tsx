@@ -1070,7 +1070,7 @@ export default function Planner() {
                           type: e.target.value as any,
                         })
                       }
-                      className="w-full bg-transparent border border-outline-variant rounded-lg px-4 py-2 text-sm outline-none focus:border-primary"
+                      className="w-full bg-transparent text-on-surface border border-outline-variant rounded-lg px-4 py-2 text-sm outline-none focus:border-primary"
                     >
                       {ACTIVITY_TYPES.map(type => (
                         <option key={type} value={type}>

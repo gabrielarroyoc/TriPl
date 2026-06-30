@@ -7,6 +7,7 @@ import { AutocompleteResults } from '../components/AutocompleteResults'
 import { DestinationCard } from '../components/DestinationCard'
 import { Badge, Button, Card, PageHeader } from '../components/ui'
 import { FEATURED_DESTINATIONS } from '../constants'
+import { LiquidGlass } from '../components/LiquidGlass'
 
 const tripStats = [
   { icon: CalendarDays, value: '14d', label: 'average trip' },
@@ -70,19 +71,18 @@ export default function Home() {
     setSearchQuery(suggestion)
     saveRecentSearch(suggestion)
     setIsDropdownOpen(false)
-    navigate(`/destination/${encodeURIComponent(suggestion)}`)
   }
 
   return (
     <div className="pb-24">
-      <section className="relative min-h-[calc(100vh-80px)] overflow-hidden">
+      <section className="relative min-h-screen overflow-hidden">
         <img
           src="https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&q=80&w=2200"
           className="absolute inset-0 h-full w-full object-cover"
           alt="Mountain road at sunrise"
         />
         <div className="absolute inset-0 bg-gradient-to-r from-blue-950/90 via-blue-950/65 to-blue-950/20" />
-        <div className="relative mx-auto grid min-h-[calc(100vh-80px)] max-w-7xl grid-cols-1 content-center gap-10 px-6 py-16 md:grid-cols-[1.1fr_0.9fr] md:px-12">
+        <div className="relative mx-auto grid min-h-screen max-w-7xl grid-cols-1 content-center gap-10 px-6 py-16 md:grid-cols-[1.1fr_0.9fr] md:px-12">
           <motion.div
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
@@ -100,9 +100,15 @@ export default function Home() {
             </p>
 
             <div ref={dropdownRef} className="relative mt-10 max-w-2xl">
-              <div className="flex flex-col gap-3 rounded-lg border border-white/20 bg-white/95 p-2 shadow-2xl shadow-blue-950/30 backdrop-blur-xl sm:flex-row">
-                <div className="flex min-h-12 flex-1 items-center gap-3 px-3">
-                  <Search className="h-5 w-5 text-primary" />
+              <LiquidGlass
+                refractionStrength={18}
+                frostedIntensity={20}
+                tintColor="rgba(255, 255, 255, 0.08)"
+                className="border border-white/25 shadow-2xl pointer-events-auto rounded-2xl overflow-visible"
+                contentClassName="flex flex-row gap-2 p-1.5 items-center w-full justify-between"
+              >
+                <div className="flex items-center gap-2 px-2 flex-1 min-w-0">
+                  <Search className="h-5 w-5 text-white/80 shrink-0" />
                   <input
                     type="text"
                     value={searchQuery}
@@ -113,13 +119,17 @@ export default function Home() {
                     onFocus={() => setIsDropdownOpen(true)}
                     onKeyDown={(event) => event.key === 'Enter' && handleSearch()}
                     placeholder={t('home.search_placeholder')}
-                    className="w-full bg-transparent text-base font-medium !text-slate-950 caret-slate-950 placeholder:!text-slate-500"
+                    className="w-full bg-transparent text-sm sm:text-base font-medium text-white caret-white placeholder:text-white/60 outline-none"
                   />
                 </div>
-                <Button onClick={handleSearch} size="lg" className="sm:min-w-36">
-                  {t('home.search_button')}
-                </Button>
-              </div>
+                <button
+                  onClick={handleSearch}
+                  className="bg-white/5 hover:bg-white/15 text-white border border-white/25 hover:border-white/50 font-bold uppercase tracking-wider text-[10px] sm:text-xs px-4 py-2.5 sm:px-6 sm:py-3.5 rounded-full transition-all duration-300 active:scale-[0.98] flex items-center justify-center gap-1.5 shrink-0"
+                >
+                  <Search size={14} className="sm:hidden" />
+                  <span className="hidden sm:inline">{t('home.search_button')}</span>
+                </button>
+              </LiquidGlass>
 
               <AnimatePresence>
                 {isDropdownOpen && (
@@ -127,7 +137,7 @@ export default function Home() {
                     initial={{ opacity: 0, y: 6 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: 6 }}
-                    className="absolute left-0 top-full z-20 mt-2 w-full overflow-hidden rounded-lg border border-slate-200 bg-white text-left text-slate-950 shadow-2xl"
+                    className="absolute left-0 top-full z-20 mt-2 w-full overflow-hidden rounded-2xl border border-outline-variant bg-surface text-left text-on-surface shadow-2xl"
                   >
                     {searchQuery.trim() === '' ? (
                       <div className="p-3">
@@ -140,7 +150,7 @@ export default function Home() {
                               <button
                                 key={search}
                                 onClick={() => handleSuggestionClick(search)}
-                                className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium !text-slate-950 transition-colors hover:bg-blue-50 hover:!text-blue-900"
+                                className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium !text-slate-950 transition-colors hover:bg-primary-container/40 hover:!text-on-primary-container"
                               >
                                 <Clock size={16} className="text-primary" />
                                 {search}
@@ -156,7 +166,7 @@ export default function Home() {
                           <button
                             key={destination.city}
                             onClick={() => handleSuggestionClick(destination.city)}
-                            className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium !text-slate-950 transition-colors hover:bg-blue-50 hover:!text-blue-900"
+                            className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium !text-slate-950 transition-colors hover:bg-primary-container/40 hover:!text-on-primary-container"
                           >
                             <TrendingUp size={16} className="text-primary" />
                             {destination.city}, {destination.country}
@@ -182,7 +192,7 @@ export default function Home() {
                               query={debouncedQuery}
                               lang={i18n.language === 'pt' ? 'pt-BR' : 'en'}
                               onSelect={handleSuggestionClick}
-                              isDark={false}
+                              isDark={true}
                             />
                           </Suspense>
                         )}
@@ -200,31 +210,36 @@ export default function Home() {
             transition={{ delay: 0.2, duration: 0.7, ease: 'easeOut' }}
             className="hidden self-end md:block"
           >
-            <Card className="bg-white/90 p-5 backdrop-blur-xl">
+            <LiquidGlass
+              refractionStrength={15}
+              frostedIntensity={20}
+              tintColor="rgba(255, 255, 255, 0.08)"
+              className="p-5 border border-white/20 shadow-2xl rounded-2xl"
+            >
               <div className="mb-4 flex items-center justify-between">
                 <div>
-                  <p className="text-label-sm text-primary">Next pick</p>
-                  <h2 className="text-2xl font-bold">
+                  <p className="text-label-sm text-white/80">Next pick</p>
+                  <h2 className="text-2xl font-bold text-white">
                     {FEATURED_DESTINATIONS[0].city}
                   </h2>
                 </div>
-                <Globe2 className="h-8 w-8 text-primary" />
+                <Globe2 className="h-8 w-8 text-white" />
               </div>
               <div className="grid grid-cols-3 gap-2">
                 {tripStats.map((stat) => (
                   <div
                     key={stat.label}
-                    className="rounded-lg border border-outline-variant bg-background p-3"
+                    className="rounded-lg border border-white/10 bg-white/5 p-3"
                   >
-                    <stat.icon className="mb-2 h-4 w-4 text-primary" />
-                    <p className="font-bold">{stat.value}</p>
-                    <p className="mt-1 text-[10px] uppercase tracking-wider text-outline">
+                    <stat.icon className="mb-2 h-4 w-4 text-white" />
+                    <p className="font-bold text-white">{stat.value}</p>
+                    <p className="mt-1 text-[10px] uppercase tracking-wider text-white/60">
                       {stat.label}
                     </p>
                   </div>
                 ))}
               </div>
-            </Card>
+            </LiquidGlass>
           </motion.div>
         </div>
       </section>

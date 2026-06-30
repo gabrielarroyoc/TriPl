@@ -5,15 +5,15 @@
 
 @theme {
   --font-sans: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
-  --color-background: #F8FAFC;
-  --color-surface: #ffffff;
-  --color-on-surface: #0f172a;
-  --color-primary: #2563EB;
-  --color-primary-container: #DBEAFE;
-  --color-on-primary-container: #1E3A8A;
-  --color-secondary-container: #E0F2FE;
-  --color-outline: #64748b;
-  --color-outline-variant: #dbe3ef;
+  --color-background: #020617;
+  --color-surface: #0f172a;
+  --color-on-surface: #F8FAFC;
+  --color-primary: #1e60ff;
+  --color-primary-container: #1E3A8A;
+  --color-on-primary-container: #DBEAFE;
+  --color-secondary-container: #172554;
+  --color-outline: #94a3b8;
+  --color-outline-variant: #1e293b;
   
   --radius-xl: 0.5rem;
   --radius-lg: 0.5rem;
@@ -22,7 +22,7 @@
 
 @layer base {
   :root {
-    color-scheme: light;
+    color-scheme: dark;
   }
 
   html {
@@ -53,12 +53,28 @@
     @apply ring-2 ring-primary ring-offset-2 ring-offset-background;
   }
 
+  select option {
+    @apply bg-white text-slate-950;
+  }
+
+  select option:checked {
+    @apply bg-primary text-white;
+  }
+
+  .dark select option {
+    @apply bg-surface text-on-surface;
+  }
+
+  .dark select option:checked {
+    @apply bg-primary-container text-on-primary-container;
+  }
+
   .dark {
     color-scheme: dark;
     --color-background: #020617;
     --color-surface: #0f172a;
     --color-on-surface: #F8FAFC;
-    --color-primary: #60A5FA;
+    --color-primary: #1e60ff;
     --color-primary-container: #1E3A8A;
     --color-on-primary-container: #DBEAFE;
     --color-secondary-container: #172554;
