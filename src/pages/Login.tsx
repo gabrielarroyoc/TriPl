@@ -20,7 +20,6 @@ export default function Login() {
   const [isLogin, setIsLogin] = useState(true)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [showLocalFallback, setShowLocalFallback] = useState(true)
 
   const {
     register,
@@ -32,7 +31,7 @@ export default function Login() {
 
   const navigate = useNavigate()
   const location = useLocation()
-  const { user, signInLocal, signInWithPassword, signUpWithPassword } = useAuth()
+  const { user, signInWithPassword, signUpWithPassword } = useAuth()
   const from = location.state?.from?.pathname || '/'
   const destination = from === '/login' ? '/' : from
 
@@ -42,16 +41,9 @@ export default function Login() {
     }
   }, [destination, navigate, user])
 
-  const handleLocalSignIn = ({ email }: AuthFormValues) => {
-    setError(null)
-    signInLocal(email)
-    navigate(destination, { replace: true })
-  }
-
   const onSubmit = async (data: AuthFormValues) => {
     if (!isSupabaseConfigured) {
-      setShowLocalFallback(true)
-      setError('Supabase is not configured. Use local mode or add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to your environment.')
+      setError('Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to your environment.')
       return
     }
 
@@ -76,13 +68,9 @@ export default function Login() {
       const message = err.message || 'An error occurred during authentication.'
       const isNetworkError = message === 'Failed to fetch' || /network|fetch/i.test(message)
 
-      if (isNetworkError) {
-        setShowLocalFallback(true)
-      }
-
       setError(
         isNetworkError
-          ? 'Could not reach the configured Supabase project. Check that VITE_SUPABASE_URL points to an active project, or continue in local mode on this device.'
+          ? 'Could not reach the configured Supabase project. Check that VITE_SUPABASE_URL points to an active project.'
           : message,
       )
     } finally {
@@ -128,7 +116,7 @@ export default function Login() {
 
           {!isSupabaseConfigured && !error && (
             <div className="mb-6 rounded-lg border border-primary/20 bg-primary-container p-4 text-sm text-on-primary-container">
-              Supabase is not configured. You can keep planning with a local account on this device.
+              Supabase is not configured. Add your Supabase URL and anon key to enable authentication.
             </div>
           )}
 
@@ -182,24 +170,7 @@ export default function Login() {
               {loading ? 'Processing...' : isLogin ? 'Sign In with Supabase' : 'Sign Up with Supabase'}
               {!loading && <ArrowRight className="h-4 w-4" />}
             </Button>
-
-            {showLocalFallback && (
-              <Button
-                type="button"
-                variant="secondary"
-                disabled={loading}
-                className="w-full"
-                size="lg"
-                onClick={handleSubmit(handleLocalSignIn)}
-              >
-                Continue in local mode
-              </Button>
-            )}
           </form>
-
-          <p className="mt-4 text-center text-xs leading-5 text-outline">
-            Local mode keeps your login only in this browser. Supabase is still used when the configured project is reachable.
-          </p>
 
           <div className="mt-8 text-center text-sm text-outline">
             {isLogin ? "Don't have an account? " : 'Already have an account? '}

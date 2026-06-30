@@ -52,6 +52,9 @@
     "back_to_search": "Voltar para Busca",
     "plan_trip_here": "Planejar Viagem aqui",
     "popular_destinations": "Destinos Populares",
+    "destination_saved": "Destino salvo na sua lista.",
+    "destination_removed": "Destino removido da sua lista.",
+    "weather_unavailable": "Os dados de clima estao temporariamente indisponiveis para este destino.",
     "loading_destination": "Carregando destino..."
   },
   "planner": {
@@ -100,7 +103,25 @@
     "profile_badge_added": "Novo Badge adicionado ao seu Perfil: LOW CORTISOL! 🏅",
     "share_trip": "Compartilhar Roteiro",
     "copy_link": "Copiar Link",
-    "sharing": "Compartilhando..."
+    "sharing": "Compartilhando...",
+    "flight_lookup_missing": "Digite um numero de voo antes de buscar.",
+    "flight_lookup_error": "Os dados do voo estao temporariamente indisponiveis.",
+    "flight_not_found": "Voo nao encontrado. Confira o numero e tente novamente.",
+    "image_search_missing": "Adicione um titulo ou local antes de buscar uma imagem.",
+    "image_search_success": "Imagem adicionada a atividade.",
+    "image_search_empty": "Nenhuma imagem foi encontrada para este local.",
+    "image_search_error": "Nao foi possivel buscar uma imagem agora.",
+    "shared_trip_load_error": "Nao foi possivel carregar este roteiro compartilhado. Tente atualizar a pagina.",
+    "local_trip_restore_error": "Seu roteiro salvo localmente nao pode ser restaurado, entao iniciamos um novo.",
+    "autosave_error": "Nao foi possivel salvar automaticamente no roteiro compartilhado. Suas ultimas edicoes podem estar apenas locais.",
+    "profile_badge_error": "Badge desbloqueado, mas nao foi possivel salva-lo no perfil agora.",
+    "duplicate_day": "Este dia ja existe no seu roteiro.",
+    "activity_added": "Atividade adicionada ao seu roteiro.",
+    "activity_updated": "Atividade atualizada.",
+    "activity_deleted": "Atividade removida do seu roteiro."
+  },
+  "account": {
+    "badges_load_error": "Nao foi possivel carregar seus badges agora."
   },
   "destinations": {
     "positano": {

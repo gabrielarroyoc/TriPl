@@ -9,7 +9,6 @@ Tripe allows users to organize their itineraries, discover trending destinations
 - **Real-Time Integration**: Mock integrations for Flights and Weather (Aviationstack & OpenWeather).
 - **Internationalization**: Seamlessly switch between English and Portuguese (PT-BR).
 - **Supabase Auth**: Secure account management and session handling.
-- **Guest Mode**: Try the app locally without registering.
 
 ## Tech Stack
 - **Frontend**: React 19, React Router, Tailwind CSS 4, Framer Motion

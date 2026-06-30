@@ -6,7 +6,7 @@ import { Badge, Button, Card, PageHeader } from '../components/ui'
 import { useAuth } from '../store/AuthContext'
 
 export default function Account() {
-  const { user, signOut, isLocalSession } = useAuth()
+  const { user, signOut } = useAuth()
   const navigate = useNavigate()
 
   const handleSignOut = async () => {
@@ -38,7 +38,6 @@ export default function Account() {
               <div className="mt-2 flex flex-wrap items-center gap-2 text-outline">
                 <Mail className="h-4 w-4 text-primary" />
                 <span>{user?.email}</span>
-                {isLocalSession && <Badge>Local mode</Badge>}
               </div>
             </div>
 

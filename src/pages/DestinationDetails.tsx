@@ -10,36 +10,37 @@ import { useDestinationsStore } from '../store/useStore'
 import { DestinationSkeleton } from '../components/Skeletons'
 import { DestinationCard } from '../components/DestinationCard'
 import { Badge, Button, Card } from '../components/ui'
+import { fetchWikipediaSummary, getWikipediaSummaryImage, type WikipediaSummary } from '../lib/wikipedia'
+import { useToastStore } from '../store/useToastStore'
 
-const fetcher = (url: string) => axios.get(url).then(res => res.data)
-
-interface WikiData {
-  title: string
-  extract: string
-  thumbnail?: { source: string }
-  originalimage?: { source: string }
-  description?: string
-  coordinates?: { lat: number; lon: number }
+const weatherFetcher = async (url: string) => {
+  try {
+    const { data } = await axios.get(url)
+    return data && typeof data === 'object' ? data : null
+  } catch {
+    return null
+  }
 }
 
 function DestinationContent() {
   const { id } = useParams()
   const { t, i18n } = useTranslation()
   const { isSaved, toggleDestination } = useDestinationsStore()
+  const { addToast } = useToastStore()
 
   const lang = i18n.language === 'pt' ? 'pt' : 'en'
 
   // Fetch Wikipedia data using SWR and Suspense
-  const { data: wikiData } = useSWR<WikiData>(
-    id ? `https://${lang}.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(id)}` : null,
-    fetcher,
+  const { data: wikiData } = useSWR<WikipediaSummary | null>(
+    id ? ['wikipedia-summary', id, lang] : null,
+    ([, query, wikiLang]: [string, string, string]) => fetchWikipediaSummary(query, wikiLang),
     { suspense: true }
   )
 
   // Try to fetch weather using SWR and Suspense
   const { data: weather } = useSWR(
     id ? `/api/weather?city=${encodeURIComponent(id)}` : null,
-    fetcher,
+    weatherFetcher,
     { suspense: true }
   )
 
@@ -62,9 +63,12 @@ function DestinationContent() {
     )
   }
 
+  const weatherData = weather && typeof weather === 'object' ? weather : null
+  const isWeatherUnavailable = !weatherData?.main
+
   const WeatherIcon = () => {
-    if (!weather?.weather?.[0]) return <Cloud className="text-primary/35" />
-    const desc = (weather.weather[0].main || weather.weather[0].description || '').toLowerCase()
+    if (!weatherData?.weather?.[0]) return <Cloud className="text-primary/35" />
+    const desc = (weatherData.weather[0].main || weatherData.weather[0].description || '').toLowerCase()
     if (desc.includes('sun') || desc.includes('clear'))
       return <Sun className="text-orange-400" />
     if (desc.includes('rain')) return <CloudRain className="text-blue-400" />
@@ -72,7 +76,7 @@ function DestinationContent() {
   }
 
   const imageUrl =
-    wikiData.originalimage?.source || wikiData.thumbnail?.source ||
+    getWikipediaSummaryImage(wikiData) ||
     'https://images.unsplash.com/photo-1488085061387-422e29b40080?auto=format&fit=crop&q=80&w=1000'
 
   return (
@@ -110,6 +114,7 @@ function DestinationContent() {
           <Button
             variant="secondary"
             onClick={() => {
+              const wasSaved = isSaved(wikiData.title || id || '')
               const destObj = FEATURED_DESTINATIONS.find(
                 d => d.city.toLowerCase() === (id || '').toLowerCase()
               ) || {
@@ -124,6 +129,12 @@ function DestinationContent() {
                 lng: wikiData.coordinates?.lon || 0,
               }
               toggleDestination(destObj)
+              addToast(
+                wasSaved
+                  ? t('explore.destination_removed', 'Destination removed from your saved list.')
+                  : t('explore.destination_saved', 'Destination saved to your list.'),
+                wasSaved ? 'info' : 'success',
+              )
             }}
           >
             <Heart 
@@ -148,7 +159,7 @@ function DestinationContent() {
                     {t('explore.climate')}
                   </p>
                   <p className="text-xl font-bold">
-                    {weather?.main?.temp != null ? `${Math.round(weather.main.temp)}°C` : 'N/A'}
+                    {weatherData?.main?.temp != null ? `${Math.round(weatherData.main.temp)}°C` : 'N/A'}
                   </p>
                 </div>
               </div>
@@ -161,11 +172,16 @@ function DestinationContent() {
                     {t('explore.wind')}
                   </p>
                   <p className="text-xl font-bold">
-                    {weather?.wind?.speed != null ? `${weather.wind.speed} km/h` : 'N/A'}
+                    {weatherData?.wind?.speed != null ? `${weatherData.wind.speed} km/h` : 'N/A'}
                   </p>
                 </div>
               </div>
             </div>
+            {isWeatherUnavailable && (
+              <p className="rounded-lg border border-outline-variant bg-primary-container/35 px-4 py-3 text-sm text-outline">
+                {t('explore.weather_unavailable', 'Weather data is temporarily unavailable for this destination.')}
+              </p>
+            )}
           </Card>
 
           <div className="space-y-6">
