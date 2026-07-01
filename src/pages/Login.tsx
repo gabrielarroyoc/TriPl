@@ -92,7 +92,7 @@ export default function Login() {
         initial={{ opacity: 0, scale: 0.98 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.4, ease: 'easeOut' }}
-        className="relative w-full max-w-7xl grid grid-cols-1 md:grid-cols-[1.15fr_0.85fr] gap-16 md:gap-24 items-center z-10"
+        className="relative w-full max-w-[1360px] grid grid-cols-1 md:grid-cols-[1.3fr_0.7fr] gap-12 md:gap-16 items-center z-10"
       >
         {/* Left Column - Inspired Mesh Gradient Card */}
         <div 
