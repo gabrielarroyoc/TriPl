@@ -4,8 +4,6 @@ import { ptBR, enUS } from 'date-fns/locale'
 import {
   Calendar,
   CheckCircle2,
-  Clock,
-  Edit2,
   Hotel,
   Info,
   Lock,
@@ -15,11 +13,10 @@ import {
   Plus,
   Search,
   Share2,
-  Trash2,
   Utensils,
   X,
 } from 'lucide-react'
-import { AnimatePresence, motion } from 'motion/react'
+import { motion } from 'motion/react'
 import { LowCortisolIcon } from '../components/Icons'
 import { useEffect, useRef, useState, Suspense } from 'react'
 import { cn } from '../lib/utils'
@@ -33,6 +30,10 @@ import { useToastStore } from '../store/useToastStore'
 import useSWR from 'swr'
 import { FlightSkeleton } from '../components/Skeletons'
 import { fetchWikipediaSummary, getWikipediaSummaryImage } from '../lib/wikipedia'
+import { ActivityCard } from '../components/planner/ActivityCard'
+import { PlannerAccordion } from '../components/planner/PlannerAccordion'
+import { useStaggerReveal, useTextSwap } from '../hooks/useAuthTransitions'
+import { useAvatarGroupHover, useVerticalDayPill } from '../hooks/usePlannerTransitions'
 
 const flightFetcher = async (url: string) => {
   try {
@@ -279,7 +280,7 @@ function AddActivityForm({
           <button
             onClick={fetchImage}
             disabled={isSearching}
-            className="px-3 bg-primary-container text-primary rounded-lg hover:bg-primary/10 transition-colors disabled:opacity-50"
+            className="t-planner-icon-btn px-3 bg-primary-container text-primary rounded-lg hover:bg-primary/10 disabled:opacity-50 disabled:cursor-not-allowed"
             title="Search for image"
           >
             {isSearching ? <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" /> : <Search size={16} />}
@@ -313,7 +314,7 @@ function AddActivityForm({
 
       <button
         onClick={() => onAdd({ ...formData, id: Date.now().toString() })}
-        className="w-full bg-primary text-white py-2 rounded-lg font-bold uppercase tracking-widest text-xs hover:bg-on-primary-container dark:bg-primary-container dark:text-on-primary-container dark:hover:bg-primary dark:hover:text-white transition-all"
+        className="t-planner-btn w-full bg-primary text-white py-2.5 rounded-xl font-bold uppercase tracking-widest text-xs hover:bg-on-primary-container dark:bg-primary-container dark:text-on-primary-container dark:hover:bg-primary dark:hover:text-white shadow-lg shadow-primary/15"
       >
         {t('planner.add_activity')}
       </button>
@@ -447,6 +448,16 @@ export default function Planner() {
   const [showAddDateModal, setShowAddDateModal] = useState(false)
   const [newDate, setNewDate] = useState('')
   const [editFormData, setEditFormData] = useState<Activity | null>(null)
+  const dayNavRef = useRef<HTMLDivElement>(null)
+  const dayPillRef = useRef<HTMLDivElement>(null)
+  const presenceRef = useRef<HTMLDivElement>(null)
+  const headerStaggerRef = useStaggerReveal(`${trip.destination}-${selectedDayIndex}`)
+  const shareLabelRef = useTextSwap(
+    isSharing ? t('planner.sharing') : tripId ? t('planner.copy_link') : t('planner.share_trip'),
+  )
+
+  useVerticalDayPill(dayNavRef, dayPillRef, selectedDayIndex)
+  useAvatarGroupHover(presenceRef)
 
   // Load trip data (either from URL/Supabase or local storage)
   useEffect(() => {
@@ -738,7 +749,9 @@ export default function Planner() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-12 gap-8 px-6 md:px-12 py-10">
+    <div className="relative">
+      <div className="absolute inset-0 bg-grid opacity-40 pointer-events-none" />
+      <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-12 gap-8 px-6 md:px-12 py-10 relative z-10">
       {/* Day Navigation */}
       <aside className="md:col-span-2 space-y-6">
         <div className="flex justify-between items-center">
@@ -749,9 +762,10 @@ export default function Planner() {
             </div>
           )}
         </div>
-        <nav className="flex flex-col gap-2 max-h-[500px] overflow-y-auto pr-2">
+        <nav className="t-planner-day-nav relative max-h-[500px] overflow-y-auto pr-1">
+          <div ref={dayPillRef} className="t-planner-day-pill" aria-hidden="true" />
+          <div ref={dayNavRef} className="relative z-[1] flex flex-col gap-1.5">
           {trip.days.map((day, idx) => {
-             // Hide private days for non-owners
              if (!isOwner && day.isPrivate) return null;
              
              let formatted = day.date
@@ -760,36 +774,36 @@ export default function Planner() {
                formatted = format(parseISO(day.date), 'MMM dd', { locale })
              } catch(e) {}
              
+             const isActive = selectedDayIndex === idx
+
              return (
               <div key={day.date} className="group relative">
                 <button
+                  type="button"
+                  data-day-tab
                   onClick={() => setSelectedDayIndex(idx)}
                   className={cn(
-                    'w-full px-4 py-3 rounded-lg text-left text-sm font-bold flex justify-between items-center transition-all',
-                    selectedDayIndex === idx
-                      ? 'bg-primary text-surface dark:text-black shadow-lg shadow-primary/20'
-                      : 'text-outline hover:bg-primary-container hover:text-on-primary-container',
+                    't-planner-day-tab w-full px-4 py-3 rounded-lg text-left text-sm font-bold flex justify-between items-center',
+                    isActive ? 'text-white' : 'text-outline hover:text-on-primary-container',
                   )}
                 >
                   <div className="flex items-center gap-2">
-                    <Calendar size={14} className={selectedDayIndex === idx ? 'text-white/70' : 'text-outline'} />
+                    <Calendar size={14} className={isActive ? 'text-white/70' : 'text-outline'} />
                     <span>{formatted}</span>
                     {day.isPrivate && (
-                      <Lock size={12} className={selectedDayIndex === idx ? 'text-white/70' : 'text-primary'} />
+                      <Lock size={12} className={isActive ? 'text-white/70' : 'text-primary'} />
                     )}
                   </div>
-                  {selectedDayIndex === idx && (
-                    <motion.div
-                      layoutId="arrow"
-                      className="w-1.5 h-1.5 bg-surface rounded-full"
-                    />
+                  {day.isCompleted && (
+                    <CheckCircle2 size={14} className={isActive ? 'text-white/80' : 'text-primary'} />
                   )}
                 </button>
                 {isOwner && (
-                  <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-[2]">
                     <button
+                      type="button"
                       onClick={() => toggleDayPrivacy(idx)}
-                      className="p-1 bg-surface rounded shadow-sm hover:bg-primary-container"
+                      className="t-planner-icon-btn p-1 bg-surface rounded shadow-sm hover:bg-primary-container"
                       title={day.isPrivate ? 'Make Public' : 'Make Private'}
                     >
                       {day.isPrivate ? (
@@ -800,13 +814,11 @@ export default function Planner() {
                     </button>
                     {trip.days.length > 1 && (
                       <button
+                        type="button"
                         onClick={() => removeDay(idx)}
-                        className="p-1 bg-surface rounded shadow-sm hover:bg-primary-container"
+                        className="t-planner-icon-btn p-1 bg-surface rounded shadow-sm hover:bg-primary-container"
                       >
-                        <X
-                          size={14}
-                          className="text-outline hover:text-red-500"
-                        />
+                        <X size={14} className="text-outline hover:text-red-500" />
                       </button>
                     )}
                   </div>
@@ -814,6 +826,7 @@ export default function Planner() {
               </div>
             )
           })}
+          </div>
           
           {showAddDateModal ? (
             <div className="mt-4 p-3 border border-outline-variant rounded-lg space-y-3 bg-primary-container/35">
@@ -830,8 +843,9 @@ export default function Planner() {
             </div>
           ) : (
             <button
+              type="button"
               onClick={() => setShowAddDateModal(true)}
-              className="mt-4 flex items-center justify-center gap-2 w-full px-4 py-3 border border-outline-variant border-dashed rounded-lg text-outline text-sm hover:border-primary hover:text-primary transition-all"
+              className="t-planner-btn mt-4 flex items-center justify-center gap-2 w-full px-4 py-3 border border-outline-variant border-dashed rounded-xl text-outline text-sm hover:border-primary hover:text-primary"
             >
               <Plus size={16} /> {t('planner.add_day')}
             </button>
@@ -870,13 +884,13 @@ export default function Planner() {
       </aside>
 
       {/* Timeline */}
-      <section className="md:col-span-6 space-y-10">
-        <div className="flex justify-between items-end flex-wrap gap-4">
+      <section className="md:col-span-6 space-y-8">
+        <div ref={headerStaggerRef} className="t-stagger flex justify-between items-end flex-wrap gap-4">
           <div>
-            <h1 className="text-h2 flex items-center gap-2 text-on-surface">
+            <h1 className="t-stagger-line t-stagger-line--1 text-h2 flex items-center gap-2 text-on-surface">
               {trip.destination}
             </h1>
-            <p className="text-label-sm text-outline font-bold uppercase tracking-widest mt-1 flex items-center gap-2">
+            <p className="t-stagger-line t-stagger-line--2 text-label-sm text-outline font-bold uppercase tracking-widest mt-1 flex items-center gap-2">
               <Calendar size={14} />
               {dayDateFormatted}
               {currentDay?.isPrivate && (
@@ -887,15 +901,13 @@ export default function Planner() {
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-3">
-            {/* Presence Indicators */}
             {presentUsers.length > 0 && (
-              <div className="flex items-center -space-x-2 mr-2">
-                {presentUsers.map((u, i) => (
-                  <div 
-                    key={u.id} 
-                    className="w-8 h-8 rounded-lg border-2 border-white bg-primary text-white flex items-center justify-center text-xs font-bold shadow-md z-10 dark:border-slate-950 dark:bg-primary-container dark:text-on-primary-container"
+              <div ref={presenceRef} className="flex items-center gap-1 mr-2">
+                {presentUsers.map(u => (
+                  <div
+                    key={u.id}
+                    className="t-avatar w-8 h-8 rounded-lg border-2 border-background bg-primary text-white flex items-center justify-center text-xs font-bold shadow-md dark:border-slate-950 dark:bg-primary-container dark:text-on-primary-container cursor-default"
                     title={u.email}
-                    style={{ zIndex: 10 - i }}
                   >
                     {u.email.charAt(0).toUpperCase()}
                   </div>
@@ -904,38 +916,48 @@ export default function Planner() {
             )}
             
             <button
+              type="button"
               onClick={handleShare}
               disabled={isSharing}
-              className="bg-primary text-white px-6 py-2 rounded-lg text-xs font-bold flex items-center gap-2 hover:bg-on-primary-container dark:bg-primary-container dark:text-on-primary-container dark:hover:bg-primary dark:hover:text-white transition-all disabled:opacity-50 shadow-lg shadow-primary/20"
+              className={cn(
+                't-planner-btn bg-primary text-white px-6 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 hover:bg-on-primary-container dark:bg-primary-container dark:text-on-primary-container dark:hover:bg-primary dark:hover:text-white shadow-lg shadow-primary/20',
+                isSharing && 'is-loading',
+              )}
             >
-              <Share2 size={16} /> 
-              {isSharing 
-                ? t('planner.sharing') 
-                : tripId 
-                  ? t('planner.copy_link') 
-                  : t('planner.share_trip')
-              }
+              <Share2 size={16} />
+              <span ref={shareLabelRef} className="t-text-swap">
+                {isSharing ? t('planner.sharing') : tripId ? t('planner.copy_link') : t('planner.share_trip')}
+              </span>
             </button>
             <button
-              onClick={() => setShowFlightSearch(true)}
-              className="bg-surface border border-outline-variant text-on-surface px-6 py-2 rounded-lg text-xs font-bold flex items-center gap-2 hover:border-primary hover:text-primary transition-all"
+              type="button"
+              onClick={() => {
+                setShowFlightSearch(v => !v)
+                if (showFlightSearch) setSearchedFlight('')
+              }}
+              className={cn(
+                't-planner-btn bg-surface border border-outline-variant text-on-surface px-6 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 hover:border-primary hover:text-primary',
+                showFlightSearch && 'border-primary text-primary',
+              )}
             >
               <Plane size={16} /> {t('planner.check_flight')}
             </button>
             <button
-              onClick={() => setShowAddActivity(true)}
-              className="bg-primary text-white px-6 py-2 rounded-lg text-xs font-bold flex items-center gap-2 hover:bg-on-primary-container dark:bg-primary-container dark:text-on-primary-container dark:hover:bg-primary dark:hover:text-white transition-all shadow-lg shadow-primary/10"
+              type="button"
+              onClick={() => setShowAddActivity(v => !v)}
+              className="t-planner-btn bg-primary text-white px-6 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 hover:bg-on-primary-container dark:bg-primary-container dark:text-on-primary-container dark:hover:bg-primary dark:hover:text-white shadow-lg shadow-primary/10"
             >
               <Plus size={16} /> {t('planner.add_activity')}
             </button>
 
             <button
+              type="button"
               onClick={() => toggleDayCheckIn(selectedDayIndex)}
               className={cn(
-                "px-6 py-2 rounded-lg text-xs font-bold flex items-center gap-2 transition-all shadow-lg",
+                't-planner-btn px-6 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 shadow-lg',
                 currentDay?.isCompleted 
-                  ? "border border-primary/25 bg-primary text-white shadow-primary/20 dark:bg-primary-container dark:text-on-primary-container" 
-                  : "bg-surface border border-outline-variant text-on-surface hover:border-primary hover:text-primary"
+                  ? 'border border-primary/25 bg-primary text-white shadow-primary/20 dark:bg-primary-container dark:text-on-primary-container' 
+                  : 'bg-surface border border-outline-variant text-on-surface hover:border-primary hover:text-primary',
               )}
             >
               <CheckCircle2 size={16} /> 
@@ -966,80 +988,62 @@ export default function Planner() {
           </motion.div>
         )}
 
-        <AnimatePresence>
-          {showFlightSearch && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              className="bg-surface border border-outline-variant p-6 rounded-lg overflow-hidden"
-            >
-              <div className="flex justify-between mb-4">
-                <h4 className="font-bold">{t('planner.flight_lookup')}</h4>
-                <button onClick={() => setShowFlightSearch(false)}>
-                  <X size={16} />
-                </button>
-              </div>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={flightNumber}
-                  onChange={e => setFlightNumber(e.target.value)}
-                  placeholder="e.g. AA100"
-                  className="flex-1 bg-transparent text-on-surface border border-outline-variant rounded-lg px-4 py-2 text-sm outline-none focus:border-primary"
-                />
-                <button
-                  onClick={searchFlight}
-                  className="bg-primary text-white px-4 rounded-lg text-xs font-bold uppercase tracking-widest hover:bg-on-primary-container dark:bg-primary-container dark:text-on-primary-container dark:hover:bg-primary dark:hover:text-white transition-colors"
-                >
-                  <Search size={16} />
-                </button>
-              </div>
-
-              {searchedFlight && (
-                <Suspense fallback={<FlightSkeleton />}>
-                  <FlightResult flightNumber={searchedFlight} />
-                </Suspense>
-              )}
-            </motion.div>
-          )}
-
-          {showAddActivity && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              className="bg-surface border border-outline-variant p-6 rounded-lg overflow-hidden"
-            >
-              <div className="flex justify-between mb-4">
-                <h4 className="font-bold">{t('planner.add_activity')}</h4>
-                <button onClick={() => setShowAddActivity(false)}>
-                  <X size={16} />
-                </button>
-              </div>
-              <AddActivityForm
-                dayIndex={selectedDayIndex}
-                onAdd={activity => {
-                  addActivity(selectedDayIndex, activity)
-                  setShowAddActivity(false)
-                }}
+        <div className="space-y-4">
+          <PlannerAccordion
+            open={showFlightSearch}
+            onToggle={() => {
+              setShowFlightSearch(v => !v)
+              if (showFlightSearch) setSearchedFlight('')
+            }}
+            title={t('planner.flight_lookup')}
+          >
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={flightNumber}
+                onChange={e => setFlightNumber(e.target.value)}
+                placeholder="e.g. AA100"
+                className="flex-1 bg-transparent text-on-surface border border-outline-variant rounded-xl px-4 py-2 text-sm outline-none focus:border-primary cursor-text"
               />
-            </motion.div>
-          )}
+              <button
+                type="button"
+                onClick={searchFlight}
+                className="t-planner-btn bg-primary text-white px-4 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-on-primary-container dark:bg-primary-container dark:text-on-primary-container dark:hover:bg-primary dark:hover:text-white"
+              >
+                <Search size={16} />
+              </button>
+            </div>
+
+            {searchedFlight && (
+              <Suspense fallback={<FlightSkeleton />}>
+                <FlightResult flightNumber={searchedFlight} />
+              </Suspense>
+            )}
+          </PlannerAccordion>
+
+          <PlannerAccordion
+            open={showAddActivity}
+            onToggle={() => setShowAddActivity(v => !v)}
+            title={t('planner.add_activity')}
+          >
+            <AddActivityForm
+              dayIndex={selectedDayIndex}
+              onAdd={activity => {
+                addActivity(selectedDayIndex, activity)
+                setShowAddActivity(false)
+              }}
+            />
+          </PlannerAccordion>
 
           {editingActivity && editFormData && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              className="bg-surface border border-outline-variant p-6 rounded-lg overflow-hidden"
+            <PlannerAccordion
+              open={Boolean(editingActivity && editFormData)}
+              onToggle={() => {
+                setEditingActivity(null)
+                setEditFormData(null)
+              }}
+              title={t('planner.edit_activity')}
             >
-              <div className="flex justify-between mb-4">
-                <h4 className="font-bold">{t('planner.edit_activity')}</h4>
-                <button onClick={() => setEditingActivity(null)}>
-                  <X size={16} />
-                </button>
-              </div>
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
@@ -1115,7 +1119,7 @@ export default function Planner() {
                     <button
                       onClick={fetchEditImage}
                       disabled={isEditingImageSearch}
-                      className="px-3 bg-primary-container text-primary rounded-lg hover:bg-primary/10 transition-colors disabled:opacity-50"
+                      className="t-planner-icon-btn px-3 bg-primary-container text-primary rounded-lg hover:bg-primary/10 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {isEditingImageSearch ? <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" /> : <Search size={16} />}
                     </button>
@@ -1149,6 +1153,7 @@ export default function Planner() {
                   />
                 </div>
                 <button
+                  type="button"
                   onClick={() =>
                     updateActivity(
                       editingActivity.dayIndex,
@@ -1156,14 +1161,14 @@ export default function Planner() {
                       editFormData,
                     )
                   }
-                  className="w-full bg-primary text-white py-2 rounded-lg font-bold uppercase tracking-widest text-xs hover:bg-on-primary-container dark:bg-primary-container dark:text-on-primary-container dark:hover:bg-primary dark:hover:text-white transition-all"
+                  className="t-planner-btn w-full bg-primary text-white py-2.5 rounded-xl font-bold uppercase tracking-widest text-xs hover:bg-on-primary-container dark:bg-primary-container dark:text-on-primary-container dark:hover:bg-primary dark:hover:text-white"
                 >
                   {t('planner.save_changes')}
                 </button>
               </div>
-            </motion.div>
+            </PlannerAccordion>
           )}
-        </AnimatePresence>
+        </div>
 
         <div className="relative pl-8">
           <div className="absolute left-[11px] top-4 bottom-4 w-[1px] bg-outline-variant" />
@@ -1200,109 +1205,22 @@ export default function Planner() {
               dayActivities
                 .sort((a, b) => a.time.localeCompare(b.time))
                 .map((activity, idx) => (
-                  <motion.div
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: idx * 0.1 }}
-                    key={activity.id}
-                    className="relative group"
-                  >
-                    <div className="absolute -left-[27px] top-2 w-4 h-4 rounded-full ring-4 ring-background z-10 bg-primary" />
-
-                    <div className="bg-surface border rounded-lg p-6 transition-all border-outline-variant hover:border-primary/50">
-                      <div className="flex justify-between items-start">
-                        <div className="flex gap-6 flex-1">
-                          <div className="w-20 h-32 flex-shrink-0 bg-primary-container rounded-lg overflow-hidden flex items-center justify-center text-primary relative border border-outline-variant/30">
-                            {activity.imageUrl ? (
-                              <img src={activity.imageUrl} className="w-full h-full object-cover" alt="" />
-                            ) : (
-                              <div className="opacity-50">
-                                {getActivityIcon(activity.type)}
-                              </div>
-                            )}
-                          </div>
-                          <div className="flex-1 py-1">
-                            <p className="text-label-sm text-outline uppercase tracking-widest font-bold flex items-center gap-2">
-                              <Clock size={12} />
-                              {activity.time}
-                            </p>
-                            <h3 className="text-lg font-bold mt-1">
-                              {activity.title}
-                            </h3>
-                            <p className="text-sm text-outline mt-1">
-                              {activity.location}
-                            </p>
-                            {activity.notes && (
-                              <p className="text-xs text-outline mt-2 italic line-clamp-2">
-                                {activity.notes}
-                              </p>
-                            )}
-                            <div className="mt-4">
-                              <span className="inline-block bg-primary-container text-[10px] font-bold text-on-primary-container px-3 py-1 rounded-md border border-primary/10 italic">
-                                {activity.type}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button
-                            onClick={() => toggleCheckIn(selectedDayIndex, activity.id)}
-                            className={cn(
-                              "p-2 rounded-lg transition-all border",
-                              activity.isCheckedIn 
-                                ? "bg-primary-container border-primary/20 text-primary" 
-                                : "hover:bg-primary-container border-transparent text-outline"
-                            )}
-                            title={activity.isCheckedIn ? "Checked In!" : "Check-in"}
-                          >
-                            <CheckCircle2 size={14} />
-                          </button>
-                          <button
-                            onClick={() => {
-                              setEditingActivity({
-                                dayIndex: selectedDayIndex,
-                                activityId: activity.id,
-                                data: activity,
-                              })
-                              setEditFormData(activity)
-                            }}
-                            className="p-2 hover:bg-primary-container rounded-lg transition-all text-outline hover:text-primary"
-                          >
-                            <Edit2 size={14} />
-                          </button>
-                          <button
-                            onClick={() =>
-                              deleteActivity(selectedDayIndex, activity.id)
-                            }
-                            className="p-2 hover:bg-red-50 rounded-lg transition-all text-red-400"
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Badges Section */}
-                      {activity.badges && activity.badges.length > 0 && (
-                        <div className="mt-4 flex flex-wrap gap-2 pt-4 border-t border-dashed border-outline-variant">
-                          {activity.badges.map(badge => (
-                            <div 
-                              key={badge}
-                              className="flex items-center gap-2 bg-primary-container border border-primary/20 px-3 py-1.5 rounded-lg shadow-sm"
-                            >
-                              <div className="w-5 h-5 flex items-center justify-center">
-                                <LowCortisolIcon className="w-full h-full text-primary" />
-                              </div>
-                              <span className="text-[10px] font-black uppercase tracking-tighter text-on-primary-container">
-                                {badge}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-
-
-                    </div>
-                  </motion.div>
+                  <ActivityCard
+                    key={`${selectedDayIndex}-${activity.id}`}
+                    activity={activity}
+                    icon={getActivityIcon(activity.type)}
+                    animationDelay={idx * 70}
+                    onCheckIn={() => toggleCheckIn(selectedDayIndex, activity.id)}
+                    onEdit={() => {
+                      setEditingActivity({
+                        dayIndex: selectedDayIndex,
+                        activityId: activity.id,
+                        data: activity,
+                      })
+                      setEditFormData(activity)
+                    }}
+                    onDelete={() => deleteActivity(selectedDayIndex, activity.id)}
+                  />
                 ))
             )}
           </div>
@@ -1425,6 +1343,7 @@ export default function Planner() {
           </ul>
         </div>
       </section>
+    </div>
     </div>
   )
 }
