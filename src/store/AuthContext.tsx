@@ -10,7 +10,7 @@ interface AuthContextType {
   user: User | null;
   signOut: () => Promise<void>;
   signInWithPassword: (email: string, password: string) => Promise<Session | null>;
-  signUpWithPassword: (email: string, password: string) => Promise<Session | null>;
+  signUpWithPassword: (email: string, password: string, name?: string) => Promise<Session | null>;
   loading: boolean;
 }
 
@@ -117,7 +117,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return data.session;
   };
 
-  const signUpWithPassword = async (email: string, password: string) => {
+  const signUpWithPassword = async (email: string, password: string, name?: string) => {
     if (!supabase) {
       throw new Error('Supabase is not configured.');
     }
@@ -125,6 +125,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
+      options: name ? { data: { full_name: name } } : undefined,
     });
 
     if (error) throw error;
