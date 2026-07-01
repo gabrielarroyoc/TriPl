@@ -110,3 +110,11 @@
 .timeline-line {
   @apply absolute left-[11px] top-0 bottom-0 w-[1px] bg-outline-variant;
 }
+
+.bg-grid {
+  background-image: 
+    linear-gradient(rgba(30, 96, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(30, 96, 255, 0.04) 1px, transparent 1px);
+  background-size: 44px 44px;
+}
+
