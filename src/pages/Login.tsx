@@ -1,27 +1,592 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { ArrowRight, Eye, EyeOff } from 'lucide-react'
-import { motion } from 'motion/react'
-import { useEffect, useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { ArrowRight, Eye, EyeOff, Loader2, MapPin } from 'lucide-react'
+import { motion, AnimatePresence } from 'motion/react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useForm, type FieldErrors, type FieldValues, type Path, type UseFormRegister } from 'react-hook-form'
 import { useLocation, useNavigate, Link } from 'react-router-dom'
 import { z } from 'zod'
+import { GrainGradient } from '@paper-design/shaders-react'
+import { useStaggerReveal, useTextSwap } from '../hooks/useAuthTransitions'
 import { isSupabaseConfigured } from '../lib/supabase'
 import { useAuth } from '../store/AuthContext'
+import { cn } from '../lib/utils'
 
-const authSchema = z.object({
+const loginSchema = z.object({
   email: z.string().email('E-mail inválido'),
   password: z.string().min(6, 'A senha deve ter pelo menos 6 caracteres'),
 })
 
-type AuthFormValues = z.infer<typeof authSchema>
+const registerSchema = z.object({
+  name: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
+  email: z.string().email('E-mail inválido'),
+  password: z.string().min(6, 'A senha deve ter pelo menos 6 caracteres'),
+  terms: z.boolean().refine(value => value, { message: 'Você precisa aceitar os termos' }),
+})
+
+type LoginFormValues = z.infer<typeof loginSchema>
+type RegisterFormValues = z.infer<typeof registerSchema>
 
 const partners = [
   { name: 'booking.com', style: 'font-sans font-bold italic' },
-  { name: 'airbnb', style: 'font-sans font-extrabold tracking-tight text-[11px]' },
-  { name: 'expedia', style: 'font-serif font-bold text-[13px]' },
+  { name: 'airbnb', style: 'font-sans font-extrabold tracking-tight' },
+  { name: 'expedia', style: 'font-serif font-bold' },
   { name: 'skyscanner', style: 'font-sans font-medium text-[11px]' },
-  { name: 'tripadvisor', style: 'font-serif italic font-extrabold text-[12px]' }
+  { name: 'tripadvisor', style: 'font-serif italic font-extrabold' },
 ]
+
+const inputClass =
+  't-input-field w-full rounded-xl bg-white/5 py-3 px-4 text-sm text-on-surface placeholder:text-outline border border-white/10 shadow-sm focus:border-primary focus:ring-[3px] focus:ring-primary/20 transition-all outline-none backdrop-blur-sm cursor-text'
+
+function getAuthErrorMessage(err: unknown, fallback: string) {
+  const message = err instanceof Error ? err.message : fallback
+  return /network|fetch/i.test(message) ? 'Não foi possível conectar ao Supabase.' : message
+}
+
+function useFieldErrorShake(error?: string) {
+  const wrapRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!error || !wrapRef.current) return
+
+    const field = wrapRef.current.querySelector<HTMLElement>('.t-input-field')
+    if (!field) return
+
+    wrapRef.current.classList.add('is-error')
+    field.classList.add('is-error')
+    field.classList.remove('is-shaking')
+    void field.offsetWidth
+    field.classList.add('is-shaking')
+
+    const shakeMs = 280
+    const timer = window.setTimeout(() => field.classList.remove('is-shaking'), shakeMs + 20)
+    return () => window.clearTimeout(timer)
+  }, [error])
+
+  useEffect(() => {
+    if (error) return
+    wrapRef.current?.classList.remove('is-error')
+    wrapRef.current?.querySelector('.t-input-field')?.classList.remove('is-error')
+  }, [error])
+
+  return wrapRef
+}
+
+function GradientPanel() {
+  const panelRef = useStaggerReveal(true)
+  const headlineRef = useStaggerReveal(true)
+
+  return (
+    <div ref={panelRef} className="t-gradient-panel absolute inset-0 rounded-[28px] overflow-hidden shadow-2xl shadow-primary/20">
+      <GrainGradient
+        width="100%"
+        height="100%"
+        colors={['#1e60ff', '#ffffff', '#38bdf8', '#6366f1']}
+        colorBack="#0a0f1e"
+        softness={0.55}
+        intensity={0.45}
+        noise={0.2}
+        shape="corners"
+        speed={0.8}
+        scale={1.1}
+        rotation={0}
+        offsetX={0}
+        offsetY={0}
+        style={{ position: 'absolute', inset: 0 }}
+      />
+
+      <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-black/10 pointer-events-none" />
+
+      <div className="absolute inset-0 flex flex-col justify-between p-10 text-white z-10">
+        <div className="mt-4">
+          <span className="t-gradient-badge inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-white/80 backdrop-blur-md mb-6">
+            <MapPin className="h-3 w-3 shrink-0" />
+            Planeje melhor
+          </span>
+          <div ref={headlineRef} className="t-stagger">
+            <h2 className="t-stagger-line t-stagger-line--1 text-[40px] font-bold leading-[1.08] tracking-tight">
+              Explore novos
+              <br />
+              destinos
+              <br />
+              <span className="font-serif italic font-normal text-white/85">com TriPl</span>
+            </h2>
+          </div>
+        </div>
+
+        <div className="mb-2">
+          <div className="flex items-center gap-6 mb-6">
+            <div className="t-gradient-stat rounded-2xl border border-white/15 bg-white/10 px-4 py-3 backdrop-blur-md">
+              <p className="text-2xl font-bold leading-none">120+</p>
+              <p className="text-[10px] text-white/50 uppercase tracking-wider mt-1">Destinos</p>
+            </div>
+            <div className="t-gradient-stat rounded-2xl border border-white/15 bg-white/10 px-4 py-3 backdrop-blur-md">
+              <p className="text-2xl font-bold leading-none">4.9</p>
+              <p className="text-[10px] text-white/50 uppercase tracking-wider mt-1">Avaliação</p>
+            </div>
+          </div>
+
+          <p className="text-[10px] text-white/40 uppercase tracking-[0.15em] font-semibold mb-4">
+            Marcas que confiam na gente
+          </p>
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2.5">
+            {partners.map(partner => (
+              <span
+                key={partner.name}
+                className={cn('t-gradient-partner text-[12px] text-white/45 tracking-wide', partner.style)}
+              >
+                {partner.name}
+              </span>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function AuthHeader({ onToggle, toggleLabel }: { onToggle: () => void; toggleLabel: string }) {
+  return (
+    <div className="flex justify-between items-center">
+      <Link to="/" className="flex items-center gap-2.5 group cursor-pointer">
+        <motion.div
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.96 }}
+          className="w-8 h-8 rounded-xl bg-primary flex items-center justify-center text-white font-black text-sm shadow-lg shadow-primary/30"
+        >
+          T
+        </motion.div>
+        <span className="font-bold text-on-surface tracking-tight text-[15px]">TriPl</span>
+      </Link>
+      <button
+        type="button"
+        onClick={onToggle}
+        className="t-auth-pill cursor-pointer text-xs font-semibold text-outline hover:text-on-surface flex items-center gap-1.5 rounded-full border border-white/15 bg-white/5 px-3.5 py-1.5 shadow-sm backdrop-blur-sm"
+      >
+        {toggleLabel}
+        <ArrowRight className="t-auth-pill-arrow h-3 w-3" />
+      </button>
+    </div>
+  )
+}
+
+function AlertBanner({ error, configMessage }: { error: string | null; configMessage: string }) {
+  if (error) {
+    return (
+      <div key={error} className="t-auth-alert mb-5 rounded-xl border border-red-500/30 bg-red-950/40 p-3.5 text-xs text-red-300 backdrop-blur-sm">
+        {error}
+      </div>
+    )
+  }
+
+  if (!isSupabaseConfigured) {
+    return (
+      <div className="t-auth-alert mb-5 rounded-xl border border-primary/30 bg-primary/10 p-3.5 text-xs text-on-primary-container backdrop-blur-sm">
+        {configMessage}
+      </div>
+    )
+  }
+
+  return null
+}
+
+function AnimatedSubmitButton({
+  loading,
+  idleLabel,
+  loadingLabel,
+  disabled,
+}: {
+  loading: boolean
+  idleLabel: string
+  loadingLabel: string
+  disabled?: boolean
+}) {
+  const label = loading ? loadingLabel : idleLabel
+  const textRef = useTextSwap(label)
+
+  return (
+    <button
+      type="submit"
+      disabled={disabled || loading}
+      className={cn(
+        't-auth-btn w-full bg-primary hover:bg-primary/90 disabled:bg-primary/40 text-white font-semibold py-3 px-4 rounded-xl text-sm mt-2 shadow-lg shadow-primary/25 inline-flex items-center justify-center gap-2 min-h-[46px]',
+        loading && 'is-loading',
+      )}
+    >
+      {loading && <Loader2 className="h-4 w-4 animate-spin shrink-0 opacity-90" aria-hidden="true" />}
+      {loading ? (
+        <span className="t-shimmer" data-text={loadingLabel}>
+          <span ref={textRef} className="t-text-swap">
+            {loadingLabel}
+          </span>
+        </span>
+      ) : (
+        <span ref={textRef} className="t-text-swap">
+          {idleLabel}
+        </span>
+      )}
+    </button>
+  )
+}
+
+function FieldGroup({ label, error, children }: { label: string; error?: string; children: ReactNode }) {
+  const wrapRef = useFieldErrorShake(error)
+
+  return (
+    <div ref={wrapRef} className="t-input-wrap">
+      <label className="block text-xs font-semibold text-on-surface/80 mb-1.5 uppercase tracking-wide">{label}</label>
+      {children}
+      {error && <p className="t-error-msg mt-1.5 text-[11px] text-red-500">{error}</p>}
+    </div>
+  )
+}
+
+function PasswordInput<T extends FieldValues>({
+  register,
+  showPassword,
+  setShowPassword,
+  error,
+}: {
+  register: UseFormRegister<T>
+  showPassword: boolean
+  setShowPassword: (v: boolean) => void
+  error?: string
+}) {
+  const wrapRef = useFieldErrorShake(error)
+
+  return (
+    <div ref={wrapRef} className="t-input-wrap">
+      <div className="relative flex items-center">
+        <input
+          type={showPassword ? 'text' : 'password'}
+          {...register('password' as Path<T>)}
+          className={cn(inputClass, 'pl-4 pr-11')}
+          placeholder="••••••••"
+        />
+        <button
+          type="button"
+          onClick={() => setShowPassword(!showPassword)}
+          className="t-auth-icon-btn absolute right-3.5 text-outline hover:text-on-surface transition-colors"
+          aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
+        >
+          <span className="t-icon-swap" data-state={showPassword ? 'b' : 'a'}>
+            <span className="t-icon" data-icon="a">
+              <Eye className="h-[18px] w-[18px]" />
+            </span>
+            <span className="t-icon" data-icon="b">
+              <EyeOff className="h-[18px] w-[18px]" />
+            </span>
+          </span>
+        </button>
+      </div>
+      {error && <p className="t-error-msg mt-1.5 text-[11px] text-red-500">{error}</p>}
+    </div>
+  )
+}
+
+function SocialButtons() {
+  return (
+    <>
+      <div className="relative my-6 flex items-center justify-center">
+        <div className="absolute inset-0 flex items-center">
+          <div className="w-full border-t border-white/10" />
+        </div>
+        <span className="relative bg-background px-4 text-[11px] font-semibold uppercase tracking-wider text-outline">
+          ou continue com
+        </span>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <button
+          type="button"
+          disabled
+          title="Em breve"
+          className="flex items-center justify-center gap-2.5 py-2.5 px-4 rounded-xl border border-white/10 bg-white/5 text-xs font-semibold text-outline cursor-not-allowed opacity-60"
+        >
+          <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" aria-hidden="true">
+            <path fill="#EA4335" d="M5.266 9.765A7.077 7.077 0 0 1 12 4.909c1.69 0 3.218.6 4.418 1.582L19.91 3C17.782 1.145 15.055 0 12 0 7.27 0 3.16 2.7 1.145 6.645l4.12 3.12z" />
+            <path fill="#4285F4" d="M23.455 12.273c0-.818-.073-1.609-.209-2.373H12v4.509h6.427a5.5 5.5 0 0 1-2.386 3.609l3.718 2.882c2.173-2 3.427-4.945 3.427-8.627z" />
+            <path fill="#34A853" d="M19.759 18.018a7.06 7.06 0 0 1-11.49-.918l-4.146 3.2C7.309 23.3 11.236 24 12 24c4.618 0 8.518-1.527 11.355-4.136l-3.596-1.846z" />
+            <path fill="#FBBC05" d="M4.123 20.3a7.077 7.077 0 0 1-.368-2.209c0-.773.136-1.518.368-2.209l-4.12-3.12A11.948 11.948 0 0 0 0 12c0 2.227.609 4.318 1.677 6.136l4.146-3.2z" />
+          </svg>
+          Google
+        </button>
+        <button
+          type="button"
+          disabled
+          title="Em breve"
+          className="flex items-center justify-center gap-2.5 py-2.5 px-4 rounded-xl border border-white/10 bg-white/5 text-xs font-semibold text-outline cursor-not-allowed opacity-60"
+        >
+          <svg className="w-4 h-4 fill-outline shrink-0" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 4.17c.66-.81 1.11-1.93.99-3.06-.96.04-2.13.64-2.82 1.45-.6.69-1.12 1.83-.98 2.94 1.07.08 2.16-.52 2.81-1.33z" />
+          </svg>
+          Apple
+        </button>
+      </div>
+    </>
+  )
+}
+
+type AuthFormShellProps = {
+  formKey: string
+  toggleLabel: string
+  title: string
+  description: string
+  configMessage: string
+  error: string | null
+  onToggle: () => void
+  togglePrompt: string
+  toggleAction: string
+  children: ReactNode
+}
+
+function AuthFormShell({
+  formKey,
+  toggleLabel,
+  title,
+  description,
+  configMessage,
+  error,
+  onToggle,
+  togglePrompt,
+  toggleAction,
+  children,
+}: AuthFormShellProps) {
+  const staggerRef = useStaggerReveal(formKey)
+
+  return (
+    <div className="flex flex-col h-full">
+      <div className="px-10 pt-8 pb-4">
+        <div className="mx-auto w-full max-w-[380px]">
+          <AuthHeader onToggle={onToggle} toggleLabel={toggleLabel} />
+        </div>
+      </div>
+
+      <div className="flex-1 flex items-center justify-center px-10 pb-8">
+        <div className="w-full max-w-[380px]">
+          <div ref={staggerRef} className="t-stagger mb-8">
+            <h2 className="t-stagger-line t-stagger-line--1 text-2xl font-bold text-on-surface tracking-tight leading-tight">
+              {title}
+            </h2>
+            <p className="t-stagger-line t-stagger-line--2 text-sm text-outline mt-2">{description}</p>
+          </div>
+
+          <AlertBanner error={error} configMessage={configMessage} />
+
+          {children}
+
+          <p className="mt-6 text-center text-xs text-outline">
+            {togglePrompt}{' '}
+            <button type="button" onClick={onToggle} className="t-auth-link cursor-pointer text-primary hover:text-primary/80 font-semibold">
+              {toggleAction}
+            </button>
+          </p>
+
+          <SocialButtons />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function LoginForm({
+  onSubmit,
+  register,
+  errors,
+  loading,
+  error,
+  showPassword,
+  setShowPassword,
+  onToggle,
+}: {
+  onSubmit: () => void
+  register: UseFormRegister<LoginFormValues>
+  errors: FieldErrors<LoginFormValues>
+  loading: boolean
+  error: string | null
+  showPassword: boolean
+  setShowPassword: (v: boolean) => void
+  onToggle: () => void
+}) {
+  return (
+    <AuthFormShell
+      formKey="login"
+      toggleLabel="Criar conta"
+      title="Bem-vindo de volta"
+      description="Entre na sua conta para continuar planejando."
+      configMessage="Supabase não configurado. Adicione chaves de ambiente para liberar o login."
+      error={error}
+      onToggle={onToggle}
+      togglePrompt="Não tem conta?"
+      toggleAction="Cadastre-se"
+    >
+      <form onSubmit={onSubmit} className="space-y-4">
+        <FieldGroup label="Email" error={errors.email?.message}>
+          <input type="email" {...register('email')} className={inputClass} placeholder="voce@email.com" />
+        </FieldGroup>
+
+        <div>
+          <label className="block text-xs font-semibold text-on-surface/80 mb-1.5 uppercase tracking-wide">Senha</label>
+          <PasswordInput
+            register={register}
+            showPassword={showPassword}
+            setShowPassword={setShowPassword}
+            error={errors.password?.message}
+          />
+        </div>
+
+        <AnimatedSubmitButton
+          loading={loading}
+          idleLabel="Entrar"
+          loadingLabel="Processando..."
+          disabled={!isSupabaseConfigured}
+        />
+      </form>
+    </AuthFormShell>
+  )
+}
+
+function RegisterForm({
+  onSubmit,
+  register,
+  errors,
+  loading,
+  error,
+  showPassword,
+  setShowPassword,
+  onToggle,
+}: {
+  onSubmit: () => void
+  register: UseFormRegister<RegisterFormValues>
+  errors: FieldErrors<RegisterFormValues>
+  loading: boolean
+  error: string | null
+  showPassword: boolean
+  setShowPassword: (v: boolean) => void
+  onToggle: () => void
+}) {
+  const termsRef = useFieldErrorShake(errors.terms?.message)
+
+  return (
+    <AuthFormShell
+      formKey="register"
+      toggleLabel="Já tenho conta"
+      title="Crie sua conta"
+      description="Comece a planejar suas próximas viagens hoje."
+      configMessage="Supabase não configurado. Adicione chaves de ambiente para liberar o cadastro."
+      error={error}
+      onToggle={onToggle}
+      togglePrompt="Já tem conta?"
+      toggleAction="Entrar"
+    >
+      <form onSubmit={onSubmit} className="space-y-4">
+        <FieldGroup label="Nome" error={errors.name?.message}>
+          <input type="text" {...register('name')} className={inputClass} placeholder="Seu nome" />
+        </FieldGroup>
+
+        <FieldGroup label="Email" error={errors.email?.message}>
+          <input type="email" {...register('email')} className={inputClass} placeholder="voce@email.com" />
+        </FieldGroup>
+
+        <div>
+          <label className="block text-xs font-semibold text-on-surface/80 mb-1.5 uppercase tracking-wide">Senha</label>
+          <PasswordInput
+            register={register}
+            showPassword={showPassword}
+            setShowPassword={setShowPassword}
+            error={errors.password?.message}
+          />
+        </div>
+
+        <div ref={termsRef} className={cn('t-input-wrap', errors.terms && 'is-error')}>
+          <div className="flex items-start text-xs text-outline pt-1">
+            <label className="flex items-start gap-2.5 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                {...register('terms')}
+                className="t-input-field mt-0.5 rounded border-white/20 text-primary focus:ring-primary/20 h-4 w-4"
+              />
+              <span>
+                Concordo com os <span className="text-primary font-semibold">Termos e Privacidade</span>
+              </span>
+            </label>
+          </div>
+          {errors.terms && <p className="t-error-msg mt-1.5 text-[11px] text-red-500">{errors.terms.message}</p>}
+        </div>
+
+        <AnimatedSubmitButton
+          loading={loading}
+          idleLabel="Criar conta"
+          loadingLabel="Processando..."
+          disabled={!isSupabaseConfigured}
+        />
+      </form>
+    </AuthFormShell>
+  )
+}
+
+type AuthFormCommonProps = {
+  loading: boolean
+  error: string | null
+  showPassword: boolean
+  setShowPassword: (v: boolean) => void
+  onToggle: () => void
+}
+
+function DesktopAuthLayout({
+  isLogin,
+  loginFormProps,
+  registerFormProps,
+}: {
+  isLogin: boolean
+  loginFormProps: AuthFormCommonProps & {
+    onSubmit: () => void
+    register: UseFormRegister<LoginFormValues>
+    errors: FieldErrors<LoginFormValues>
+  }
+  registerFormProps: AuthFormCommonProps & {
+    onSubmit: () => void
+    register: UseFormRegister<RegisterFormValues>
+    errors: FieldErrors<RegisterFormValues>
+  }
+}) {
+  return (
+    <div className="h-full grid grid-cols-1 md:grid-cols-2 relative z-10">
+      <div className="hidden md:block h-full">
+        <AnimatePresence mode="wait">
+          {!isLogin && (
+            <motion.div
+              key="register-form"
+              initial={{ opacity: 0, x: 12, filter: 'blur(3px)' }}
+              animate={{ opacity: 1, x: 0, filter: 'blur(0px)' }}
+              exit={{ opacity: 0, x: -8, filter: 'blur(3px)' }}
+              transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+              className="h-full"
+            >
+              <RegisterForm {...registerFormProps} />
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      <div className="h-full md:block">
+        <AnimatePresence mode="wait">
+          {isLogin && (
+            <motion.div
+              key="login-form"
+              initial={{ opacity: 0, x: -12, filter: 'blur(3px)' }}
+              animate={{ opacity: 1, x: 0, filter: 'blur(0px)' }}
+              exit={{ opacity: 0, x: 8, filter: 'blur(3px)' }}
+              transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+              className="h-full"
+            >
+              <LoginForm {...loginFormProps} />
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </div>
+  )
+}
 
 export default function Login() {
   const [isLogin, setIsLogin] = useState(true)
@@ -29,12 +594,13 @@ export default function Login() {
   const [error, setError] = useState<string | null>(null)
   const [showPassword, setShowPassword] = useState(false)
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<AuthFormValues>({
-    resolver: zodResolver(authSchema),
+  const loginForm = useForm<LoginFormValues>({
+    resolver: zodResolver(loginSchema),
+  })
+
+  const registerForm = useForm<RegisterFormValues>({
+    resolver: zodResolver(registerSchema),
+    defaultValues: { terms: false },
   })
 
   const navigate = useNavigate()
@@ -49,265 +615,106 @@ export default function Login() {
     }
   }, [destination, navigate, user])
 
-  const onSubmit = async (data: AuthFormValues) => {
+  const handleToggle = () => {
+    setError(null)
+    setShowPassword(false)
+    setIsLogin(!isLogin)
+  }
+
+  const authCommonProps: AuthFormCommonProps = {
+    loading,
+    error,
+    showPassword,
+    setShowPassword,
+    onToggle: handleToggle,
+  }
+
+  const onLoginSubmit = async (data: LoginFormValues) => {
     if (!isSupabaseConfigured) {
-      setError('Supabase não está configurado. Adicione VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY ao seu ambiente.')
+      setError('Supabase não está configurado.')
       return
     }
-
     setLoading(true)
     setError(null)
-
     try {
-      if (isLogin) {
-        await signInWithPassword(data.email, data.password)
-      } else {
-        const session = await signUpWithPassword(data.email, data.password)
-        if (session) {
-          navigate(destination, { replace: true })
-          return
-        }
-        setError('Verifique seu e-mail para o link de confirmação se esta for uma nova conta.')
-        setLoading(false)
-        return
-      }
+      await signInWithPassword(data.email, data.password)
       navigate(destination, { replace: true })
-    } catch (err: any) {
-      const message = err.message || 'Ocorreu um erro durante a autenticação.'
-      const isNetworkError = message === 'Failed to fetch' || /network|fetch/i.test(message)
-
-      setError(
-        isNetworkError
-          ? 'Não foi possível conectar ao Supabase. Verifique suas chaves de ambiente.'
-          : message,
-      )
+    } catch (err: unknown) {
+      setError(getAuthErrorMessage(err, 'Erro durante a autenticação.'))
     } finally {
       setLoading(false)
     }
   }
 
+  const onRegisterSubmit = async (data: RegisterFormValues) => {
+    if (!isSupabaseConfigured) {
+      setError('Supabase não está configurado.')
+      return
+    }
+    setLoading(true)
+    setError(null)
+    try {
+      const session = await signUpWithPassword(data.email, data.password, data.name)
+      if (session) {
+        navigate(destination, { replace: true })
+        return
+      }
+      setError('Verifique seu e-mail para o link de confirmação.')
+    } catch (err: unknown) {
+      setError(getAuthErrorMessage(err, 'Erro durante o cadastro.'))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const loginFormProps = {
+    ...authCommonProps,
+    onSubmit: loginForm.handleSubmit(onLoginSubmit),
+    register: loginForm.register,
+    errors: loginForm.formState.errors,
+  }
+
+  const registerFormProps = {
+    ...authCommonProps,
+    onSubmit: registerForm.handleSubmit(onRegisterSubmit),
+    register: registerForm.register,
+    errors: registerForm.formState.errors,
+  }
+
   return (
-    <div className="min-h-screen bg-[#f4f6f9] flex items-center justify-center p-6 md:p-8 relative">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.98 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.4, ease: 'easeOut' }}
-        className="relative w-full max-w-[1360px] grid grid-cols-1 md:grid-cols-[1.3fr_0.7fr] gap-12 md:gap-16 items-center z-10"
-      >
-        {/* Left Column - Inspired Mesh Gradient Card */}
-        <div 
-          className="relative hidden md:flex w-full h-[calc(100vh-48px)] md:h-[calc(100vh-48px)] min-h-[640px] rounded-[32px] overflow-hidden flex-col justify-between p-12 text-white border border-white/5 shadow-xl"
-          style={{
-            background: `
-              radial-gradient(circle at 15% 85%, rgba(0, 210, 255, 0.45) 0%, transparent 60%), 
-              radial-gradient(circle at 85% 15%, rgba(30, 96, 255, 0.8) 0%, transparent 55%), 
-              radial-gradient(circle at 50% 50%, rgba(99, 102, 241, 0.35) 0%, transparent 65%), 
-              #0c2d68
-            `
+    <div className="h-screen bg-background overflow-hidden relative">
+      <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] rounded-full bg-primary/10 blur-[130px] pointer-events-none" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] rounded-full bg-blue-500/5 blur-[160px] pointer-events-none" />
+      <div className="absolute inset-0 bg-grid pointer-events-none" />
+
+      <div className="absolute inset-4 z-20 hidden md:block pointer-events-none">
+        <motion.div
+          className="absolute top-0 bottom-0 w-[calc(50%-8px)] pointer-events-auto"
+          animate={{
+            left: isLogin ? 0 : 'calc(50% + 8px)',
           }}
+          transition={{ type: 'spring', stiffness: 200, damping: 30 }}
         >
-          {/* Top text branding */}
-          <div>
-            <p className="text-[10px] font-bold text-white/50 uppercase tracking-widest pl-0.5">
-              PLANEJE MELHOR
-            </p>
-            <h2 className="text-4xl font-extrabold leading-[1.15] tracking-tight mt-4">
-              Explore novos <br />
-              destinos <br />
-              <span className="font-serif italic font-normal text-[#93c5fd]">com TriPl</span>
-            </h2>
-          </div>
+          <GradientPanel />
+        </motion.div>
+      </div>
 
-          {/* Partner logos block */}
-          <div className="mt-auto pl-0.5">
-            <p className="text-[9px] text-white/40 uppercase tracking-widest font-semibold mb-4">
-              Marcas que confiam na gente
-            </p>
-            <div className="flex flex-wrap items-center gap-x-6 gap-y-3 opacity-40">
-              {partners.map((partner, i) => (
-                <span key={i} className={`text-white tracking-wider lowercase ${partner.style}`}>
-                  {partner.name}
-                </span>
-              ))}
-            </div>
+      <DesktopAuthLayout
+        isLogin={isLogin}
+        loginFormProps={loginFormProps}
+        registerFormProps={registerFormProps}
+      />
+
+      <div className="md:hidden h-full absolute inset-0 z-30">
+        <div className="t-page-slide h-full" data-page={isLogin ? 'login' : 'register'}>
+          <div className="t-page h-full" data-page-id="login">
+            <LoginForm {...loginFormProps} />
+          </div>
+          <div className="t-page h-full" data-page-id="register">
+            <RegisterForm {...registerFormProps} />
           </div>
         </div>
-
-        {/* Right Column - Form Container */}
-        <div className="flex flex-col w-full max-w-[380px] mx-auto text-left p-2 sm:p-0">
-          {/* Header Row: Logo & Top Right Action */}
-          <div className="flex justify-between items-center mb-16">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-xl bg-primary flex items-center justify-center text-white font-black text-sm shadow-md shadow-primary/10">
-                T
-              </div>
-              <span className="font-extrabold text-[#0c2540] tracking-wider text-base">tripl</span>
-            </div>
-            <Link
-              to="/explore"
-              className="text-xs font-semibold text-[#8c9ba5] hover:text-[#0c2540] transition-colors flex items-center gap-1"
-            >
-              Explorar destinos <ArrowRight className="h-3 w-3" />
-            </Link>
-          </div>
-
-          {/* Titles */}
-          <div className="mb-8">
-            <h2 className="text-2xl font-bold text-[#0c2540] tracking-tight">
-              {isLogin ? 'Bem-vindo de volta' : 'Criar conta'}
-            </h2>
-            <p className="text-xs text-[#8c9ba5] font-medium mt-1">
-              {isLogin ? 'Entre na sua conta para continuar.' : 'Crie sua conta para começar.'}
-            </p>
-          </div>
-
-          {error && (
-            <div className="mb-6 rounded-xl border border-red-200 bg-red-50 p-4 text-xs text-red-600">
-              {error}
-            </div>
-          )}
-
-          {!isSupabaseConfigured && !error && (
-            <div className="mb-6 rounded-xl border border-blue-200 bg-blue-50 p-4 text-xs text-blue-600">
-              Supabase não configurado. Adicione chaves de ambiente para liberar o login.
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-            {/* E-mail Field */}
-            <div>
-              <label className="block text-xs font-bold text-[#0c2540] mb-2">
-                Email
-              </label>
-              <input
-                type="email"
-                {...register('email')}
-                className="w-full bg-[#eef2f6] rounded-xl py-3.5 px-4 text-xs text-[#0c2540] placeholder:text-[#a0aec0] border border-transparent focus:border-[#70b5ff]/50 focus:bg-white focus:ring-1 focus:ring-[#70b5ff]/20 transition-all outline-none"
-                placeholder="m@example.com"
-              />
-              {errors.email && (
-                <p className="mt-1 text-[11px] text-red-500 pl-1">{errors.email.message}</p>
-              )}
-            </div>
-
-            {/* Password Field */}
-            <div>
-              <div className="flex justify-between items-center mb-2">
-                <label className="block text-xs font-bold text-[#0c2540]">
-                  Senha
-                </label>
-                <button
-                  type="button"
-                  className="text-xs font-semibold text-[#1e60ff] hover:underline"
-                >
-                  Esqueceu a senha?
-                </button>
-              </div>
-              <div className="relative flex items-center">
-                <input
-                  type={showPassword ? "text" : "password"}
-                  {...register('password')}
-                  className="w-full bg-[#eef2f6] rounded-xl py-3.5 pl-4 pr-12 text-xs text-[#0c2540] placeholder:text-[#a0aec0] border border-transparent focus:border-[#70b5ff]/50 focus:bg-white focus:ring-1 focus:ring-[#70b5ff]/20 transition-all outline-none"
-                  placeholder="••••••••"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 text-[#a0aec0] hover:text-[#0c2540] transition-colors"
-                >
-                  {showPassword ? (
-                    <EyeOff className="h-4 w-4" />
-                  ) : (
-                    <Eye className="h-4 w-4" />
-                  )}
-                </button>
-              </div>
-              {errors.password && (
-                <p className="mt-1 text-[11px] text-red-500 pl-1">{errors.password.message}</p>
-              )}
-            </div>
-
-            {/* Remember Me checkbox */}
-            <div className="flex items-center text-xs text-[#8c9ba5] font-medium pt-1">
-              <label className="flex items-center gap-2 hover:text-[#0c2540] cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  className="rounded border-[#cbd5e1] text-primary focus:ring-primary h-4 w-4"
-                />
-                <span>Lembrar-me</span>
-              </label>
-            </div>
-
-            {/* Submit Button */}
-            <button
-              type="submit"
-              disabled={loading || !isSupabaseConfigured}
-              className="w-full bg-[#1e60ff] hover:bg-[#1a56db] disabled:bg-[#1e60ff]/50 text-white font-bold py-3 px-4 rounded-xl transition-all duration-200 active:scale-[0.99] flex items-center justify-center gap-2 mt-6 text-sm shadow-md shadow-[#1e60ff]/10"
-            >
-              {loading ? 'Processando...' : isLogin ? 'Entrar' : 'Cadastrar'}
-            </button>
-          </form>
-
-          {/* Toggle Register / Login */}
-          <div className="mt-6 text-center text-xs text-[#8c9ba5] font-medium">
-            {isLogin ? "Não tem conta? " : 'Já tem conta? '}
-            <button
-              type="button"
-              onClick={() => setIsLogin(!isLogin)}
-              className="text-[#1e60ff] hover:underline font-semibold"
-            >
-              {isLogin ? 'Cadastre-se' : 'Entrar'}
-            </button>
-          </div>
-
-          {/* Divider */}
-          <div className="relative my-6 flex items-center justify-center">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-[#cbd5e1]/40" />
-            </div>
-            <span className="relative bg-[#f4f6f9] px-3 text-[9px] font-bold text-[#8c9ba5] tracking-widest">
-              OU
-            </span>
-          </div>
-
-          {/* Social Logins */}
-          <div className="grid grid-cols-2 gap-4">
-            <button
-              type="button"
-              className="flex items-center justify-center gap-2.5 py-3 px-4 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 transition-colors text-xs font-semibold text-[#0c2540]"
-            >
-              <svg className="w-4 h-4" viewBox="0 0 24 24">
-                <path
-                  fill="#EA4335"
-                  d="M5.266 9.765A7.077 7.077 0 0 1 12 4.909c1.69 0 3.218.6 4.418 1.582L19.91 3C17.782 1.145 15.055 0 12 0 7.27 0 3.16 2.7 1.145 6.645l4.12 3.12z"
-                />
-                <path
-                  fill="#4285F4"
-                  d="M23.455 12.273c0-.818-.073-1.609-.209-2.373H12v4.509h6.427a5.5 5.5 0 0 1-2.386 3.609l3.718 2.882c2.173-2 3.427-4.945 3.427-8.627z"
-                />
-                <path
-                  fill="#34A853"
-                  d="M19.759 18.018a7.06 7.06 0 0 1-11.49-.918l-4.146 3.2C7.309 23.3 11.236 24 12 24c4.618 0 8.518-1.527 11.355-4.136l-3.596-1.846z"
-                />
-                <path
-                  fill="#FBBC05"
-                  d="M4.123 20.3a7.077 7.077 0 0 1-.368-2.209c0-.773.136-1.518.368-2.209l-4.12-3.12A11.948 11.948 0 0 0 0 12c0 2.227.609 4.318 1.677 6.136l4.146-3.2z"
-                />
-              </svg>
-              Google
-            </button>
-            <button
-              type="button"
-              className="flex items-center justify-center gap-2.5 py-3 px-4 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 transition-colors text-xs font-semibold text-[#0c2540]"
-            >
-              <svg className="w-4 h-4 fill-[#0c2540]" viewBox="0 0 24 24">
-                <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 4.17c.66-.81 1.11-1.93.99-3.06-.96.04-2.13.64-2.82 1.45-.6.69-1.12 1.83-.98 2.94 1.07.08 2.16-.52 2.81-1.33z" />
-              </svg>
-              Apple
-            </button>
-          </div>
-        </div>
-      </motion.div>
+      </div>
     </div>
   )
 }
