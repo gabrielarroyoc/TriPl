@@ -343,12 +343,13 @@ function Footer() {
 function AppContent() {
   const location = useLocation()
   const isHomePage = location.pathname === '/'
+  const isLoginPage = location.pathname === '/login'
 
   return (
     <div className="min-h-screen flex flex-col font-sans transition-colors duration-300">
-      <Navbar />
+      {!isLoginPage && <Navbar />}
       <ToastContainer />
-      <main className={cn("flex-grow", isHomePage ? "pt-0" : "pt-24")}>
+      <main className={cn("flex-grow", isHomePage || isLoginPage ? "pt-0" : "pt-24")}>
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
@@ -391,7 +392,7 @@ function AppContent() {
           />
         </Routes>
       </main>
-      <Footer />
+      {!isLoginPage && <Footer />}
     </div>
   )
 }
