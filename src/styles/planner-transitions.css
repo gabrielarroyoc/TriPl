@@ -1,0 +1,262 @@
+/* transitions.dev — planner screen */
+
+:root {
+  --tabs-dur: 250ms;
+  --tabs-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --tabs-text-muted: var(--color-outline);
+  --tabs-text-active: var(--color-on-surface);
+  --tabs-bar-bg: color-mix(in srgb, var(--color-primary-container) 35%, transparent);
+  --tabs-pill-bg: var(--color-primary);
+
+  --acc-expand: 280ms;
+  --acc-collapse: 240ms;
+  --acc-chevron: 250ms;
+  --acc-ease: cubic-bezier(0.22, 1, 0.36, 1);
+
+  --avatar-lift: -4px;
+  --avatar-dur: 320ms;
+  --avatar-scale: 1.06;
+  --avatar-falloff: 0.45;
+  --avatar-ease-in: cubic-bezier(0.22, 1, 0.36, 1);
+  --avatar-ease-out: cubic-bezier(0.34, 3.85, 0.64, 1);
+
+  --tilt-perspective: 900px;
+  --tilt-return: 700ms;
+  --tilt-return-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --tilt-follow: 320ms;
+  --tilt-follow-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --tilt-glare-opacity: 0.22;
+  --tilt-glare-fade: 280ms;
+  --tilt-glare-ease: cubic-bezier(0.22, 1, 0.36, 1);
+
+  --planner-panel-dur: 320ms;
+}
+
+.t-planner-btn {
+  cursor: pointer;
+  transition:
+    transform var(--duration-quick, 150ms) var(--ease-smooth-out, cubic-bezier(0.22, 1, 0.36, 1)),
+    box-shadow var(--duration-quick, 150ms) var(--ease-smooth-out, cubic-bezier(0.22, 1, 0.36, 1)),
+    background-color var(--duration-quick, 150ms) ease,
+    border-color var(--duration-quick, 150ms) ease,
+    color var(--duration-quick, 150ms) ease,
+    opacity var(--duration-quick, 150ms) ease;
+}
+
+.t-planner-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.t-planner-btn:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.t-planner-btn:disabled {
+  cursor: not-allowed;
+}
+
+.t-planner-btn.is-loading {
+  cursor: wait;
+}
+
+.t-planner-icon-btn {
+  cursor: pointer;
+  transition:
+    transform var(--duration-quick, 150ms) ease,
+    background-color var(--duration-quick, 150ms) ease,
+    color var(--duration-quick, 150ms) ease,
+    opacity var(--duration-quick, 150ms) ease;
+}
+
+.t-planner-icon-btn:hover:not(:disabled) {
+  transform: scale(1.05);
+}
+
+.t-planner-day-nav {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  padding: 0.25rem;
+  border-radius: 0.75rem;
+  background: color-mix(in srgb, var(--color-surface) 88%, transparent);
+}
+
+.t-planner-day-tab {
+  position: relative;
+  z-index: 1;
+  appearance: none;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 0.5rem;
+  transition: color var(--tabs-dur) var(--tabs-ease);
+}
+
+.t-planner-day-pill {
+  position: absolute;
+  left: 0.25rem;
+  right: 0.25rem;
+  border-radius: 0.5rem;
+  background: var(--color-primary);
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--color-primary) 35%, transparent);
+  transition:
+    transform var(--tabs-dur) var(--tabs-ease),
+    height var(--tabs-dur) var(--tabs-ease),
+    opacity var(--tabs-dur) var(--tabs-ease);
+  will-change: transform, height;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.t-acc-panel {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--acc-collapse) var(--acc-ease);
+}
+
+.t-acc[data-open='true'] .t-acc-panel {
+  grid-template-rows: 1fr;
+  transition: grid-template-rows var(--acc-expand) var(--acc-ease);
+}
+
+.t-acc-panel-inner {
+  overflow: hidden;
+  opacity: 0;
+  filter: blur(2px);
+  transition:
+    opacity var(--acc-collapse) var(--acc-ease),
+    filter var(--acc-collapse) var(--acc-ease);
+}
+
+.t-acc[data-open='true'] .t-acc-panel-inner {
+  opacity: 1;
+  filter: blur(0);
+  transition:
+    opacity var(--acc-expand) var(--acc-ease),
+    filter var(--acc-expand) var(--acc-ease);
+}
+
+.t-acc-chevron {
+  display: inline-flex;
+  transform: scaleY(1);
+  transform-origin: center;
+  transition: transform var(--acc-chevron) var(--acc-ease);
+}
+
+.t-acc-chevron path {
+  vector-effect: non-scaling-stroke;
+}
+
+.t-acc[data-open='true'] .t-acc-chevron {
+  transform: scaleY(-1);
+}
+
+.t-avatar {
+  transform-origin: center;
+  transform: translateY(var(--shift, 0px)) scale(var(--scale-active, 1));
+  transition: transform var(--avatar-dur) var(--avatar-ease-in);
+  will-change: transform;
+}
+
+.t-tilt {
+  touch-action: none;
+}
+
+.t-tilt-card {
+  position: relative;
+  overflow: hidden;
+  transform:
+    perspective(var(--tilt-perspective))
+    rotateX(var(--tilt-rx, 0deg))
+    rotateY(var(--tilt-ry, 0deg));
+  transform-style: preserve-3d;
+  transition: transform var(--tilt-return) var(--tilt-return-ease);
+  will-change: transform;
+}
+
+.t-tilt-card.is-tilting {
+  transition: transform var(--tilt-follow) var(--tilt-follow-ease);
+}
+
+.t-tilt-glare {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  mix-blend-mode: screen;
+  background:
+    radial-gradient(
+      circle 95px at var(--tilt-gx, 50%) var(--tilt-gy, 50%),
+      rgba(255, 255, 255, 0.35),
+      rgba(255, 255, 255, 0.04) 52%,
+      rgba(255, 255, 255, 0) 84%
+    );
+  transition: opacity var(--tilt-glare-fade) var(--tilt-glare-ease);
+}
+
+.t-tilt.is-hover .t-tilt-glare {
+  opacity: var(--tilt-glare-opacity);
+}
+
+.t-planner-panel-in {
+  animation: t-planner-panel-in var(--planner-panel-dur) cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes t-planner-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+    filter: blur(3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+.t-planner-activity-enter {
+  animation: t-planner-activity-enter 400ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes t-planner-activity-enter {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+    filter: blur(2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+    filter: blur(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .t-planner-btn,
+  .t-planner-icon-btn,
+  .t-planner-day-pill,
+  .t-planner-day-tab,
+  .t-acc-panel,
+  .t-acc-panel-inner,
+  .t-acc-chevron,
+  .t-avatar,
+  .t-tilt-card {
+    transition: none !important;
+    animation: none !important;
+    transform: none !important;
+  }
+
+  .t-planner-panel-in,
+  .t-planner-activity-enter {
+    animation: none !important;
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+
+  .t-tilt-glare {
+    display: none;
+  }
+}

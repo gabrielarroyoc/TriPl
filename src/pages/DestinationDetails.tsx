@@ -10,7 +10,8 @@ import { useDestinationsStore } from '../store/useStore'
 import { DestinationSkeleton } from '../components/Skeletons'
 import { DestinationCard } from '../components/DestinationCard'
 import { Badge, Button, Card } from '../components/ui'
-import { fetchWikipediaSummary, getWikipediaSummaryImage, type WikipediaSummary } from '../lib/wikipedia'
+import { fetchMapboxDestination, type MapboxDestination } from '../lib/mapbox'
+import { Map, MapMarker, MarkerContent, MapControls } from '../components/ui/map'
 import { useToastStore } from '../store/useToastStore'
 
 const weatherFetcher = async (url: string) => {
@@ -30,10 +31,10 @@ function DestinationContent() {
 
   const lang = i18n.language === 'pt' ? 'pt' : 'en'
 
-  // Fetch Wikipedia data using SWR and Suspense
-  const { data: wikiData } = useSWR<WikipediaSummary | null>(
-    id ? ['wikipedia-summary', id, lang] : null,
-    ([, query, wikiLang]: [string, string, string]) => fetchWikipediaSummary(query, wikiLang),
+  // Fetch Mapbox data using SWR and Suspense
+  const { data: destData } = useSWR<MapboxDestination | null>(
+    id ? ['mapbox-destination', id, lang] : null,
+    ([, query, destLang]: [string, string, string]) => fetchMapboxDestination(query, destLang),
     { suspense: true }
   )
 
@@ -44,7 +45,7 @@ function DestinationContent() {
     { suspense: true }
   )
 
-  if (!wikiData) {
+  if (!destData) {
     return (
       <div className="max-w-7xl mx-auto px-6 md:px-12 py-32 text-center space-y-6">
         <Globe2 className="w-16 h-16 mx-auto text-primary" />
@@ -75,9 +76,8 @@ function DestinationContent() {
     return <Cloud className="text-primary/50" />
   }
 
-  const imageUrl =
-    getWikipediaSummaryImage(wikiData) ||
-    'https://images.unsplash.com/photo-1488085061387-422e29b40080?auto=format&fit=crop&q=80&w=1000'
+  const imageUrl = destData.image || 'https://images.unsplash.com/photo-1488085061387-422e29b40080?auto=format&fit=crop&q=80&w=1000'
+  const hasCoordinates = !!(destData.coordinates?.lat && destData.coordinates?.lon)
 
   return (
     <div className="max-w-7xl mx-auto px-6 md:px-12 py-12 space-y-12">
@@ -89,44 +89,63 @@ function DestinationContent() {
       </Link>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-        {/* Gallery/Hero */}
+        {/* Map View Powered by Mapbox */}
         <motion.div
           initial={{ opacity: 0, scale: 0.98 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="aspect-[4/5] rounded-lg overflow-hidden bg-primary-container border border-outline-variant sticky top-32 shadow-xl shadow-blue-950/10"
+          className="aspect-[4/5] rounded-lg overflow-hidden bg-primary-container border border-outline-variant sticky top-32 shadow-xl shadow-blue-950/10 z-10 min-h-[400px]"
         >
-          <img
-            src={imageUrl}
-            className="w-full h-full object-cover"
-            alt={wikiData.title}
-          />
+          {hasCoordinates ? (
+            <Map
+              viewport={{
+                center: [destData.coordinates!.lon, destData.coordinates!.lat],
+                zoom: 11,
+              }}
+              className="w-full h-full"
+            >
+              <MapMarker longitude={destData.coordinates!.lon} latitude={destData.coordinates!.lat}>
+                <MarkerContent>
+                  <div className="bg-primary text-white p-2.5 rounded-full shadow-lg border-2 border-white flex items-center justify-center hover:scale-105 transition-transform">
+                    <MapPin className="w-5 h-5" />
+                  </div>
+                </MarkerContent>
+              </MapMarker>
+              <MapControls />
+            </Map>
+          ) : (
+            <img
+              src={imageUrl}
+              className="w-full h-full object-cover"
+              alt={destData.title}
+            />
+          )}
         </motion.div>
 
         {/* Content */}
         <div className="space-y-10">
           <div>
             <Badge>
-              {wikiData.description || 'Destination'}
+              {destData.description || 'Destination'}
             </Badge>
-            <h1 className="text-h1 mt-2">{wikiData.title}</h1>
+            <h1 className="text-h1 mt-2">{destData.title}</h1>
           </div>
           
           <Button
             variant="secondary"
             onClick={() => {
-              const wasSaved = isSaved(wikiData.title || id || '')
+              const wasSaved = isSaved(destData.title || id || '')
               const destObj = FEATURED_DESTINATIONS.find(
                 d => d.city.toLowerCase() === (id || '').toLowerCase()
               ) || {
-                city: wikiData.title || id || '',
+                city: destData.title || id || '',
                 country: '',
-                tagline: wikiData.description || '',
-                description: wikiData.extract || '',
+                tagline: destData.description || '',
+                description: destData.extract || '',
                 pricePerWeek: 0,
                 tags: [],
                 image: imageUrl,
-                lat: wikiData.coordinates?.lat || 0,
-                lng: wikiData.coordinates?.lon || 0,
+                lat: destData.coordinates?.lat || 0,
+                lng: destData.coordinates?.lon || 0,
               }
               toggleDestination(destObj)
               addToast(
@@ -139,9 +158,9 @@ function DestinationContent() {
           >
             <Heart 
               size={18} 
-              className={isSaved(wikiData.title || id || '') ? 'fill-current text-red-500' : ''} 
+              className={isSaved(destData.title || id || '') ? 'fill-current text-red-500' : ''} 
             />
-            {isSaved(wikiData.title || id || '') ? 'Saved to My Destinations' : 'Save Destination'}
+            {isSaved(destData.title || id || '') ? 'Saved to My Destinations' : 'Save Destination'}
           </Button>
 
           {/* APIs: Weather Widget */}
@@ -187,12 +206,12 @@ function DestinationContent() {
           <div className="space-y-6">
             <h3 className="text-h3">{t('explore.cultural_overview')}</h3>
             <p className="text-outline text-base md:text-lg leading-relaxed">
-              {wikiData.extract}
+              {destData.extract}
             </p>
-            {wikiData.coordinates && (
+            {destData.coordinates && (
               <p className="text-sm text-outline flex items-center gap-2 pt-4">
-                <MapPin size={16} /> Coordinates: {wikiData.coordinates.lat},{' '}
-                {wikiData.coordinates.lon}
+                <MapPin size={16} /> Coordinates: {destData.coordinates.lat},{' '}
+                {destData.coordinates.lon}
               </p>
             )}
           </div>
