@@ -139,12 +139,36 @@
     "santorini": {
       "tagline": "Vistas de pôr do sol inigualáveis e beleza austera",
       "description": "Arquitetura cicládica contra o azul profundo do Mar Egeu."
-    }
-  },
-  "destinations": {
+    },
     "my_destinations": "Meus Destinos",
     "my_destinations_desc": "Sua lista selecionada de lugares para ir e onde você já esteve.",
     "no_saved": "Nenhum destino salvo ainda",
     "explore_to_save": "Vá para a aba Explorar para encontrar e salvar sua próxima aventura!"
+  },
+  "login": {
+    "welcome": "Bem-vindo de volta",
+    "welcome_desc": "Entre na sua conta para continuar planejando.",
+    "supabase_not_configured": "Supabase não configurado. Adicione chaves de ambiente para liberar a autenticação.",
+    "no_account": "Não tem conta?",
+    "sign_up": "Cadastre-se",
+    "sign_up_pill": "Criar conta",
+    "has_account_pill": "Já tenho conta",
+    "email": "Email",
+    "password": "Senha",
+    "forgot_password": "Esqueceu a senha?",
+    "sign_in": "Entrar",
+    "processing": "Processando...",
+    "create_account": "Crie sua conta",
+    "create_account_desc": "Comece a planejar suas próximas viagens hoje.",
+    "has_account": "Já tem conta?",
+    "name": "Nome",
+    "agree_terms": "Concordo com os Termos e Privacidade",
+    "sign_up_btn": "Criar conta",
+    "plan_better": "Planeje melhor",
+    "explore_destinations": "Explore novos destinos",
+    "with_tripl": "com TriPl",
+    "trusted_brands": "Marcas que confiam na gente",
+    "destinations_stat": "Destinos",
+    "rating_stat": "Avaliação"
   }
 }

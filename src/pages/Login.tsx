@@ -1,10 +1,11 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { ArrowRight, Eye, EyeOff, Loader2, MapPin } from 'lucide-react'
+import { ArrowRight, Eye, EyeOff, Loader2, MapPin, Check, ChevronDown } from 'lucide-react'
 import { motion, AnimatePresence } from 'motion/react'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useForm, type FieldErrors, type FieldValues, type Path, type UseFormRegister } from 'react-hook-form'
 import { useLocation, useNavigate, Link } from 'react-router-dom'
 import { z } from 'zod'
+import { useTranslation } from 'react-i18next'
 import { GrainGradient } from '@paper-design/shaders-react'
 import { useStaggerReveal, useTextSwap } from '../hooks/useAuthTransitions'
 import { isSupabaseConfigured } from '../lib/supabase'
@@ -74,6 +75,7 @@ function useFieldErrorShake(error?: string) {
 function GradientPanel() {
   const panelRef = useStaggerReveal(true)
   const headlineRef = useStaggerReveal(true)
+  const { t } = useTranslation()
 
   return (
     <div ref={panelRef} className="t-gradient-panel absolute inset-0 rounded-[28px] overflow-hidden shadow-2xl shadow-primary/20">
@@ -100,15 +102,13 @@ function GradientPanel() {
         <div className="mt-4">
           <span className="t-gradient-badge inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-white/80 backdrop-blur-md mb-6">
             <MapPin className="h-3 w-3 shrink-0" />
-            Planeje melhor
+            {t('login.plan_better', 'Planeje melhor')}
           </span>
           <div ref={headlineRef} className="t-stagger">
             <h2 className="t-stagger-line t-stagger-line--1 text-[40px] font-bold leading-[1.08] tracking-tight">
-              Explore novos
+              {t('login.explore_destinations', 'Explore novos destinos')}
               <br />
-              destinos
-              <br />
-              <span className="font-serif italic font-normal text-white/85">com TriPl</span>
+              <span className="font-serif italic font-normal text-white/85">{t('login.with_tripl', 'com TriPl')}</span>
             </h2>
           </div>
         </div>
@@ -117,16 +117,16 @@ function GradientPanel() {
           <div className="flex items-center gap-6 mb-6">
             <div className="t-gradient-stat rounded-2xl border border-white/15 bg-white/10 px-4 py-3 backdrop-blur-md">
               <p className="text-2xl font-bold leading-none">120+</p>
-              <p className="text-[10px] text-white/50 uppercase tracking-wider mt-1">Destinos</p>
+              <p className="text-[10px] text-white/50 uppercase tracking-wider mt-1">{t('login.destinations_stat', 'Destinos')}</p>
             </div>
             <div className="t-gradient-stat rounded-2xl border border-white/15 bg-white/10 px-4 py-3 backdrop-blur-md">
               <p className="text-2xl font-bold leading-none">4.9</p>
-              <p className="text-[10px] text-white/50 uppercase tracking-wider mt-1">Avaliação</p>
+              <p className="text-[10px] text-white/50 uppercase tracking-wider mt-1">{t('login.rating_stat', 'Avaliação')}</p>
             </div>
           </div>
 
           <p className="text-[10px] text-white/40 uppercase tracking-[0.15em] font-semibold mb-4">
-            Marcas que confiam na gente
+            {t('login.trusted_brands', 'Marcas que confiam na gente')}
           </p>
           <div className="flex flex-wrap items-center gap-x-6 gap-y-2.5">
             {partners.map(partner => (
@@ -144,9 +144,99 @@ function GradientPanel() {
   )
 }
 
-function AuthHeader({ onToggle, toggleLabel }: { onToggle: () => void; toggleLabel: string }) {
+function LanguageSelect({
+  value,
+  onChange,
+}: {
+  value: string
+  onChange: (val: string) => void
+}) {
+  const [isOpen, setIsOpen] = useState(false)
+  const dropdownRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  const options = [
+    { value: 'pt', label: 'Português', flag: '🇧🇷' },
+    { value: 'en', label: 'English', flag: '🇺🇸' },
+  ]
+
+  const currentOption = options.find((opt) => opt.value === value) || options[0]
+
   return (
-    <div className="flex justify-between items-center">
+    <div className="relative inline-block text-left" ref={dropdownRef}>
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center gap-2 text-xs font-semibold text-on-surface bg-white/5 border border-white/15 rounded-full px-3 py-1.5 outline-none cursor-pointer hover:bg-white/10 transition-all active:scale-[0.98] backdrop-blur-md select-none"
+      >
+        <span>{currentOption.flag}</span>
+        <span>{currentOption.label}</span>
+        <ChevronDown className={cn("w-3 h-3 text-outline transition-transform duration-200", isOpen && "rotate-180")} />
+      </button>
+
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: 8, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 8, scale: 0.95 }}
+            transition={{ duration: 0.15, ease: 'easeOut' }}
+            className="absolute right-0 mt-2 w-40 bg-[#0f172a]/95 border border-white/10 rounded-2xl shadow-2xl p-1.5 z-50 backdrop-blur-xl"
+          >
+            {options.map((opt) => {
+              const isSelected = opt.value === value
+              return (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => {
+                    onChange(opt.value)
+                    setIsOpen(false)
+                  }}
+                  className={cn(
+                    "flex items-center justify-between w-full text-left text-xs font-medium px-3 py-2 rounded-xl transition-colors cursor-pointer select-none",
+                    isSelected
+                      ? "bg-primary text-white font-semibold"
+                      : "text-on-surface hover:bg-white/10"
+                  )}
+                >
+                  <span className="flex items-center gap-2.5">
+                    <span>{opt.flag}</span>
+                    <span>{opt.label}</span>
+                  </span>
+                  {isSelected && <Check className="w-3.5 h-3.5" />}
+                </button>
+              )
+            })}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  )
+}
+
+function AuthHeader({
+  onToggle,
+  toggleLabel,
+  currentLanguage,
+  onLanguageChange,
+}: {
+  onToggle: () => void
+  toggleLabel: string
+  currentLanguage: string
+  onLanguageChange: (lang: string) => void
+}) {
+  return (
+    <div className="flex justify-between items-center w-full">
       <Link to="/" className="flex items-center gap-2.5 group cursor-pointer">
         <motion.div
           whileHover={{ scale: 1.05 }}
@@ -157,14 +247,20 @@ function AuthHeader({ onToggle, toggleLabel }: { onToggle: () => void; toggleLab
         </motion.div>
         <span className="font-bold text-on-surface tracking-tight text-[15px]">TriPl</span>
       </Link>
-      <button
-        type="button"
-        onClick={onToggle}
-        className="t-auth-pill cursor-pointer text-xs font-semibold text-outline hover:text-on-surface flex items-center gap-1.5 rounded-full border border-white/15 bg-white/5 px-3.5 py-1.5 shadow-sm backdrop-blur-sm"
-      >
-        {toggleLabel}
-        <ArrowRight className="t-auth-pill-arrow h-3 w-3" />
-      </button>
+
+      <div className="flex items-center gap-3">
+        {/* Custom Language Selector Dropdown */}
+        <LanguageSelect value={currentLanguage} onChange={onLanguageChange} />
+
+        <button
+          type="button"
+          onClick={onToggle}
+          className="t-auth-pill cursor-pointer text-xs font-semibold text-outline hover:text-on-surface flex items-center gap-1.5 rounded-full border border-white/15 bg-white/5 px-3.5 py-1.5 shadow-sm backdrop-blur-sm"
+        >
+          {toggleLabel}
+          <ArrowRight className="t-auth-pill-arrow h-3 w-3" />
+        </button>
+      </div>
     </div>
   )
 }
@@ -245,11 +341,13 @@ function PasswordInput<T extends FieldValues>({
   showPassword,
   setShowPassword,
   error,
+  autoComplete = 'current-password',
 }: {
   register: UseFormRegister<T>
   showPassword: boolean
   setShowPassword: (v: boolean) => void
   error?: string
+  autoComplete?: string
 }) {
   const wrapRef = useFieldErrorShake(error)
 
@@ -259,6 +357,7 @@ function PasswordInput<T extends FieldValues>({
         <input
           type={showPassword ? 'text' : 'password'}
           {...register('password' as Path<T>)}
+          autoComplete={autoComplete}
           className={cn(inputClass, 'pl-4 pr-11')}
           placeholder="••••••••"
         />
@@ -284,6 +383,8 @@ function PasswordInput<T extends FieldValues>({
 }
 
 function SocialButtons() {
+  const { t } = useTranslation()
+
   return (
     <>
       <div className="relative my-6 flex items-center justify-center">
@@ -291,7 +392,7 @@ function SocialButtons() {
           <div className="w-full border-t border-white/10" />
         </div>
         <span className="relative bg-background px-4 text-[11px] font-semibold uppercase tracking-wider text-outline">
-          ou continue com
+          {t('home.no_suggestions', 'ou continue com').includes('ou') ? 'ou continue com' : 'or continue with'}
         </span>
       </div>
 
@@ -337,6 +438,8 @@ type AuthFormShellProps = {
   togglePrompt: string
   toggleAction: string
   children: ReactNode
+  currentLanguage: string
+  onLanguageChange: (lang: string) => void
 }
 
 function AuthFormShell({
@@ -350,6 +453,8 @@ function AuthFormShell({
   togglePrompt,
   toggleAction,
   children,
+  currentLanguage,
+  onLanguageChange,
 }: AuthFormShellProps) {
   const staggerRef = useStaggerReveal(formKey)
 
@@ -357,7 +462,12 @@ function AuthFormShell({
     <div className="flex flex-col h-full">
       <div className="px-10 pt-8 pb-4">
         <div className="mx-auto w-full max-w-[380px]">
-          <AuthHeader onToggle={onToggle} toggleLabel={toggleLabel} />
+          <AuthHeader
+            onToggle={onToggle}
+            toggleLabel={toggleLabel}
+            currentLanguage={currentLanguage}
+            onLanguageChange={onLanguageChange}
+          />
         </div>
       </div>
 
@@ -397,6 +507,8 @@ function LoginForm({
   showPassword,
   setShowPassword,
   onToggle,
+  currentLanguage,
+  onLanguageChange,
 }: {
   onSubmit: () => void
   register: UseFormRegister<LoginFormValues>
@@ -406,38 +518,53 @@ function LoginForm({
   showPassword: boolean
   setShowPassword: (v: boolean) => void
   onToggle: () => void
+  currentLanguage: string
+  onLanguageChange: (lang: string) => void
 }) {
+  const { t } = useTranslation()
+
   return (
     <AuthFormShell
       formKey="login"
-      toggleLabel="Criar conta"
-      title="Bem-vindo de volta"
-      description="Entre na sua conta para continuar planejando."
-      configMessage="Supabase não configurado. Adicione chaves de ambiente para liberar o login."
+      toggleLabel={t('login.sign_up_pill', 'Criar conta')}
+      title={t('login.welcome', 'Bem-vindo de volta')}
+      description={t('login.welcome_desc', 'Entre na sua conta para continuar planejando.')}
+      configMessage={t('login.supabase_not_configured', 'Supabase não configurado. Adicione chaves de ambiente para liberar o login.')}
       error={error}
       onToggle={onToggle}
-      togglePrompt="Não tem conta?"
-      toggleAction="Cadastre-se"
+      togglePrompt={t('login.no_account', 'Não tem conta?')}
+      toggleAction={t('login.sign_up', 'Cadastre-se')}
+      currentLanguage={currentLanguage}
+      onLanguageChange={onLanguageChange}
     >
-      <form onSubmit={onSubmit} className="space-y-4">
-        <FieldGroup label="Email" error={errors.email?.message}>
-          <input type="email" {...register('email')} className={inputClass} placeholder="voce@email.com" />
+      <form onSubmit={onSubmit} method="POST" className="space-y-4">
+        <FieldGroup label={t('login.email', 'Email')} error={errors.email?.message}>
+          <input type="email" {...register('email')} autoComplete="email" className={inputClass} placeholder="voce@email.com" />
         </FieldGroup>
 
         <div>
-          <label className="block text-xs font-semibold text-on-surface/80 mb-1.5 uppercase tracking-wide">Senha</label>
+          <div className="flex justify-between items-center mb-1.5">
+            <label className="block text-xs font-semibold text-on-surface/80 uppercase tracking-wide">{t('login.password', 'Senha')}</label>
+            <button
+              type="button"
+              className="text-xs font-semibold text-primary hover:text-primary/85 transition-colors cursor-pointer"
+            >
+              {t('login.forgot_password', 'Esqueceu a senha?')}
+            </button>
+          </div>
           <PasswordInput
             register={register}
             showPassword={showPassword}
             setShowPassword={setShowPassword}
             error={errors.password?.message}
+            autoComplete="current-password"
           />
         </div>
 
         <AnimatedSubmitButton
           loading={loading}
-          idleLabel="Entrar"
-          loadingLabel="Processando..."
+          idleLabel={t('login.sign_in', 'Entrar')}
+          loadingLabel={t('login.processing', 'Processando...')}
           disabled={!isSupabaseConfigured}
         />
       </form>
@@ -454,6 +581,8 @@ function RegisterForm({
   showPassword,
   setShowPassword,
   onToggle,
+  currentLanguage,
+  onLanguageChange,
 }: {
   onSubmit: () => void
   register: UseFormRegister<RegisterFormValues>
@@ -463,37 +592,43 @@ function RegisterForm({
   showPassword: boolean
   setShowPassword: (v: boolean) => void
   onToggle: () => void
+  currentLanguage: string
+  onLanguageChange: (lang: string) => void
 }) {
+  const { t } = useTranslation()
   const termsRef = useFieldErrorShake(errors.terms?.message)
 
   return (
     <AuthFormShell
       formKey="register"
-      toggleLabel="Já tenho conta"
-      title="Crie sua conta"
-      description="Comece a planejar suas próximas viagens hoje."
-      configMessage="Supabase não configurado. Adicione chaves de ambiente para liberar o cadastro."
+      toggleLabel={t('login.has_account_pill', 'Já tenho conta')}
+      title={t('login.create_account', 'Crie sua conta')}
+      description={t('login.create_account_desc', 'Comece a planejar suas próximas viagens hoje.')}
+      configMessage={t('login.supabase_not_configured', 'Supabase não configurado. Adicione chaves de ambiente para liberar o cadastro.')}
       error={error}
       onToggle={onToggle}
-      togglePrompt="Já tem conta?"
-      toggleAction="Entrar"
+      togglePrompt={t('login.has_account', 'Já tem conta?')}
+      toggleAction={t('login.sign_in', 'Entrar')}
+      currentLanguage={currentLanguage}
+      onLanguageChange={onLanguageChange}
     >
-      <form onSubmit={onSubmit} className="space-y-4">
-        <FieldGroup label="Nome" error={errors.name?.message}>
-          <input type="text" {...register('name')} className={inputClass} placeholder="Seu nome" />
+      <form onSubmit={onSubmit} method="POST" className="space-y-4">
+        <FieldGroup label={t('login.name', 'Nome')} error={errors.name?.message}>
+          <input type="text" {...register('name')} autoComplete="name" className={inputClass} placeholder="Seu nome" />
         </FieldGroup>
 
-        <FieldGroup label="Email" error={errors.email?.message}>
-          <input type="email" {...register('email')} className={inputClass} placeholder="voce@email.com" />
+        <FieldGroup label={t('login.email', 'Email')} error={errors.email?.message}>
+          <input type="email" {...register('email')} autoComplete="email" className={inputClass} placeholder="voce@email.com" />
         </FieldGroup>
 
         <div>
-          <label className="block text-xs font-semibold text-on-surface/80 mb-1.5 uppercase tracking-wide">Senha</label>
+          <label className="block text-xs font-semibold text-on-surface/80 mb-1.5 uppercase tracking-wide">{t('login.password', 'Senha')}</label>
           <PasswordInput
             register={register}
             showPassword={showPassword}
             setShowPassword={setShowPassword}
             error={errors.password?.message}
+            autoComplete="new-password"
           />
         </div>
 
@@ -506,7 +641,7 @@ function RegisterForm({
                 className="t-input-field mt-0.5 rounded border-white/20 text-primary focus:ring-primary/20 h-4 w-4"
               />
               <span>
-                Concordo com os <span className="text-primary font-semibold">Termos e Privacidade</span>
+                {t('login.agree_terms', 'Concordo com os Termos e Privacidade')}
               </span>
             </label>
           </div>
@@ -515,8 +650,8 @@ function RegisterForm({
 
         <AnimatedSubmitButton
           loading={loading}
-          idleLabel="Criar conta"
-          loadingLabel="Processando..."
+          idleLabel={t('login.sign_up_btn', 'Criar conta')}
+          loadingLabel={t('login.processing', 'Processando...')}
           disabled={!isSupabaseConfigured}
         />
       </form>
@@ -530,6 +665,8 @@ type AuthFormCommonProps = {
   showPassword: boolean
   setShowPassword: (v: boolean) => void
   onToggle: () => void
+  currentLanguage: string
+  onLanguageChange: (lang: string) => void
 }
 
 function DesktopAuthLayout({
@@ -589,10 +726,12 @@ function DesktopAuthLayout({
 }
 
 export default function Login() {
+  const { i18n } = useTranslation()
   const [isLogin, setIsLogin] = useState(true)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showPassword, setShowPassword] = useState(false)
+  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' ? window.innerWidth < 768 : false)
 
   const loginForm = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -615,10 +754,22 @@ export default function Login() {
     }
   }, [destination, navigate, user])
 
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768)
+    }
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+
   const handleToggle = () => {
     setError(null)
     setShowPassword(false)
     setIsLogin(!isLogin)
+  }
+
+  const handleLanguageChange = (lang: string) => {
+    i18n.changeLanguage(lang)
   }
 
   const authCommonProps: AuthFormCommonProps = {
@@ -627,6 +778,8 @@ export default function Login() {
     showPassword,
     setShowPassword,
     onToggle: handleToggle,
+    currentLanguage: i18n.language,
+    onLanguageChange: handleLanguageChange,
   }
 
   const onLoginSubmit = async (data: LoginFormValues) => {
@@ -687,34 +840,38 @@ export default function Login() {
       <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] rounded-full bg-blue-500/5 blur-[160px] pointer-events-none" />
       <div className="absolute inset-0 bg-grid pointer-events-none" />
 
-      <div className="absolute inset-4 z-20 hidden md:block pointer-events-none">
-        <motion.div
-          className="absolute top-0 bottom-0 w-[calc(50%-8px)] pointer-events-auto"
-          animate={{
-            left: isLogin ? 0 : 'calc(50% + 8px)',
-          }}
-          transition={{ type: 'spring', stiffness: 200, damping: 30 }}
-        >
-          <GradientPanel />
-        </motion.div>
-      </div>
-
-      <DesktopAuthLayout
-        isLogin={isLogin}
-        loginFormProps={loginFormProps}
-        registerFormProps={registerFormProps}
-      />
-
-      <div className="md:hidden h-full absolute inset-0 z-30">
-        <div className="t-page-slide h-full" data-page={isLogin ? 'login' : 'register'}>
-          <div className="t-page h-full" data-page-id="login">
-            <LoginForm {...loginFormProps} />
+      {!isMobile ? (
+        <>
+          <div className="absolute inset-4 z-20 hidden md:block pointer-events-none">
+            <motion.div
+              className="absolute top-0 bottom-0 w-[calc(50%-8px)] pointer-events-auto"
+              animate={{
+                left: isLogin ? 0 : 'calc(50% + 8px)',
+              }}
+              transition={{ type: 'spring', stiffness: 200, damping: 30 }}
+            >
+              <GradientPanel />
+            </motion.div>
           </div>
-          <div className="t-page h-full" data-page-id="register">
-            <RegisterForm {...registerFormProps} />
+
+          <DesktopAuthLayout
+            isLogin={isLogin}
+            loginFormProps={loginFormProps}
+            registerFormProps={registerFormProps}
+          />
+        </>
+      ) : (
+        <div className="h-full absolute inset-0 z-30">
+          <div className="t-page-slide h-full" data-page={isLogin ? 'login' : 'register'}>
+            <div className="t-page h-full" data-page-id="login">
+              <LoginForm {...loginFormProps} />
+            </div>
+            <div className="t-page h-full" data-page-id="register">
+              <RegisterForm {...registerFormProps} />
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   )
 }

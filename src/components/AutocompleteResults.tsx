@@ -1,43 +1,16 @@
-import axios from 'axios'
 import { Search } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import useSWR from 'swr'
-import { fetchWikipediaSummary, getWikipediaSummaryImage } from '../lib/wikipedia'
+import { fetchMapboxAutocomplete } from '../lib/mapbox'
 
 export const fetchAutocomplete = async ([_, query, lang]: [string, string, string]) => {
   if (!query) return []
-  
-  // 1. Fetch strict geographical locations from Nominatim
-  const nomRes = await axios.get(
-    `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=5&accept-language=${lang}`
-  )
-  
-  const validClasses = ['place', 'boundary']
-  const filtered = (nomRes.data || []).filter((item: any) => validClasses.includes(item.class))
-  const uniqueItems = Array.from(new Map(filtered.map((item: any) => [item.name, item])).values()) as any[]
-
-  // 2. Fetch thumbnails from Wikipedia
-  const wikiLang = lang === 'pt-BR' ? 'pt' : 'en'
-  const enriched = await Promise.all(
-    uniqueItems.map(async (item) => {
-      try {
-        const summary = await fetchWikipediaSummary(item.name, wikiLang)
-        return {
-          name: item.name,
-          display_name: item.display_name,
-          image: getWikipediaSummaryImage(summary)
-        }
-      } catch (err) {
-        return {
-          name: item.name,
-          display_name: item.display_name,
-          image: null
-        }
-      }
-    })
-  )
-
-  return enriched
+  const results = await fetchMapboxAutocomplete(query, lang)
+  return results.map(item => ({
+    name: item.name,
+    display_name: item.display_name,
+    image: null
+  }))
 }
 
 export function AutocompleteResults({ 
