@@ -35,6 +35,7 @@ import { PlannerAccordion } from '../components/planner/PlannerAccordion'
 import { useStaggerReveal, useTextSwap } from '../hooks/useAuthTransitions'
 import { useAvatarGroupHover, useVerticalDayPill } from '../hooks/usePlannerTransitions'
 import { fetchMapboxAutocomplete } from '../lib/mapbox'
+import { Map, MapArc, MapMarker, MarkerContent } from '../components/ui/map'
 
 const flightFetcher = async (url: string) => {
   try {
@@ -534,8 +535,7 @@ export default function Planner() {
         const state = room.presenceState()
         // Flatten the object to get all connected user states
         const users = Object.values(state).flatMap((presenceList: any) => presenceList)
-        // Deduplicate by user id (in case someone has multiple tabs open)
-        const uniqueUsers = Array.from(new Map(users.map((u: any) => [u.id, u])).values())
+        const uniqueUsers = users.filter((u: any, idx, self) => self.findIndex(x => x.id === u.id) === idx)
         setPresentUsers(uniqueUsers as { id: string, email: string }[])
       })
       .subscribe(async (status) => {
@@ -783,6 +783,28 @@ export default function Planner() {
   } catch (e) {
     dayDateFormatted = currentDay?.date || ''
   }
+
+  const sortedActivities = [...dayActivities].sort((a, b) => a.time.localeCompare(b.time))
+  const routeMarkers = sortedActivities
+    .filter(act => act.coordinates)
+    .map((act, index) => ({
+      id: act.id,
+      label: (index + 1).toString(),
+      lng: act.coordinates![0],
+      lat: act.coordinates![1],
+      title: act.title,
+      location: act.location,
+    }))
+
+  const routeArcs = routeMarkers.slice(0, -1).map((m, i) => ({
+    id: `arc-${m.id}-${routeMarkers[i + 1].id}`,
+    from: [m.lng, m.lat] as [number, number],
+    to: [routeMarkers[i + 1].lng, routeMarkers[i + 1].lat] as [number, number],
+  }))
+
+  const mapCenter: [number, number] = routeMarkers.length > 0
+    ? [routeMarkers[0].lng, routeMarkers[0].lat]
+    : [139.6917, 35.6895] // Default Tokyo
 
   return (
     <div className="relative">
@@ -1267,7 +1289,42 @@ export default function Planner() {
       <section className="md:col-span-4 space-y-6">
         {dayActivities.length > 0 && (
           <div className="bg-surface border border-outline-variant rounded-lg overflow-hidden">
-
+            {routeMarkers.length > 0 && (
+              <div className="h-[200px] w-full border-b border-outline-variant relative overflow-hidden bg-primary-container/20">
+                <Map
+                  viewport={{
+                    center: mapCenter,
+                    zoom: 11,
+                  }}
+                  className="w-full h-full"
+                  interactive={true}
+                >
+                  {routeArcs.length > 0 && (
+                    <MapArc
+                      data={routeArcs}
+                      paint={{
+                        "line-color": "var(--color-primary, #3b82f6)",
+                        "line-width": 2,
+                        "line-dasharray": [3, 3],
+                      }}
+                      interactive={false}
+                    />
+                  )}
+                  {routeMarkers.map(m => (
+                    <MapMarker key={m.id} longitude={m.lng} latitude={m.lat}>
+                      <MarkerContent>
+                        <div 
+                          className="w-5 h-5 bg-primary text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 border-white shadow-md cursor-help"
+                          title={`${m.label}. ${m.title} (${m.location})`}
+                        >
+                          {m.label}
+                        </div>
+                      </MarkerContent>
+                    </MapMarker>
+                  ))}
+                </Map>
+              </div>
+            )}
             <div className="p-6 space-y-6">
               <div className="flex justify-between items-center">
                 <h3 className="text-xl font-bold">{t('planner.day_summary')}</h3>
