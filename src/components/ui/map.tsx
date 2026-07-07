@@ -329,7 +329,7 @@ const Map = forwardRef<MapRef, MapProps>(function Map(
 
   // Sync controlled viewport to map
   useEffect(() => {
-    if (!mapInstance || !isControlled || !viewport) return;
+    if (!mapInstance || !viewport) return;
     if (mapInstance.isMoving()) return;
 
     const current = getViewport(mapInstance);
@@ -353,7 +353,7 @@ const Map = forwardRef<MapRef, MapProps>(function Map(
     internalUpdateRef.current = true;
     mapInstance.jumpTo(next);
     internalUpdateRef.current = false;
-  }, [mapInstance, isControlled, viewport]);
+  }, [mapInstance, viewport]);
 
   // Handle style change
   useEffect(() => {
