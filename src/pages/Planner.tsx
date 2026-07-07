@@ -34,6 +34,7 @@ import { ActivityCard } from '../components/planner/ActivityCard'
 import { PlannerAccordion } from '../components/planner/PlannerAccordion'
 import { useStaggerReveal, useTextSwap } from '../hooks/useAuthTransitions'
 import { useAvatarGroupHover, useVerticalDayPill } from '../hooks/usePlannerTransitions'
+import { fetchMapboxAutocomplete } from '../lib/mapbox'
 
 const flightFetcher = async (url: string) => {
   try {
@@ -321,6 +322,20 @@ function AddActivityForm({
       </button>
     </div>
   )
+}
+
+const geocodeLocation = async (location: string, lang: string): Promise<[number, number] | undefined> => {
+  if (!location.trim()) return undefined
+  try {
+    const results = await fetchMapboxAutocomplete(location, lang)
+    if (results && results.length > 0) {
+      const first = results[0]
+      return [first.coordinates.lng, first.coordinates.lat]
+    }
+  } catch (err) {
+    console.error('Failed to geocode location:', err)
+  }
+  return undefined
 }
 
 export default function Planner() {
@@ -708,25 +723,39 @@ export default function Planner() {
     setSelectedDayIndex(Math.max(0, selectedDayIndex - 1))
   }
 
-  const addActivity = (dayIndex: number, activity: Activity) => {
+  const addActivity = async (dayIndex: number, activity: Activity) => {
     const newDays = [...trip.days]
     if (!newDays[dayIndex]) return
-    newDays[dayIndex].activities = [...newDays[dayIndex].activities, activity]
+    
+    const lang = i18n.language === 'pt' ? 'pt-BR' : 'en'
+    const coords = await geocodeLocation(activity.location, lang)
+    const activityWithCoords = { ...activity, coordinates: coords }
+    
+    newDays[dayIndex].activities = [...newDays[dayIndex].activities, activityWithCoords]
     const newTrip = { ...trip, days: newDays }
     saveTrip(newTrip)
     addToast(t('planner.activity_added', 'Activity added to your itinerary.'), 'success')
     setShowAddActivity(false)
   }
 
-  const updateActivity = (
+  const updateActivity = async (
     dayIndex: number,
     activityId: string,
     updated: Activity,
   ) => {
     const newDays = [...trip.days]
     if (!newDays[dayIndex]) return
+    
+    const oldAct = newDays[dayIndex].activities.find(act => act.id === activityId)
+    let coords = updated.coordinates
+    if (!coords || oldAct?.location !== updated.location) {
+      const lang = i18n.language === 'pt' ? 'pt-BR' : 'en'
+      coords = await geocodeLocation(updated.location, lang)
+    }
+    const updatedWithCoords = { ...updated, coordinates: coords }
+    
     newDays[dayIndex].activities = newDays[dayIndex].activities.map(act =>
-      act.id === activityId ? updated : act,
+      act.id === activityId ? updatedWithCoords : act,
     )
     const newTrip = { ...trip, days: newDays }
     saveTrip(newTrip)
