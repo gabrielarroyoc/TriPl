@@ -29,6 +29,7 @@ import { useAuth } from '../store/AuthContext'
 import { useToastStore } from '../store/useToastStore'
 import useSWR from 'swr'
 import { FlightSkeleton } from '../components/Skeletons'
+import { fetchWikipediaSummary, getWikipediaSummaryImage } from '../lib/wikipedia'
 import { ActivityCard } from '../components/planner/ActivityCard'
 import { PlannerAccordion } from '../components/planner/PlannerAccordion'
 import { useStaggerReveal, useTextSwap } from '../hooks/useAuthTransitions'
@@ -127,6 +128,7 @@ interface Activity {
   imageUrl?: string
   isCheckedIn?: boolean
   badges?: string[]
+  coordinates?: [number, number] // [lng, lat]
 }
 
 
@@ -373,6 +375,7 @@ export default function Planner() {
             title: 'NH 202 · HND Arrival',
             location: 'Terminal 3, Haneda Airport',
             type: 'Flight',
+            coordinates: [139.7798, 35.5494],
           },
           {
             id: '2',
@@ -380,6 +383,7 @@ export default function Planner() {
             title: 'The Trunk Hotel',
             location: 'Shibuya-ku, Jingumae 5-31',
             type: 'Hotel',
+            coordinates: [139.7016, 35.6634],
           },
         ]
       },
@@ -392,6 +396,7 @@ export default function Planner() {
             title: 'Senso-ji Temple',
             location: 'Asakusa, Tokyo',
             type: 'Activity',
+            coordinates: [139.7967, 35.7148],
           },
           {
             id: '4',
@@ -399,6 +404,7 @@ export default function Planner() {
             title: 'Lunch at Tsukiji',
             location: 'Tsukiji Market',
             type: 'Restaurant',
+            coordinates: [139.7712, 35.6628],
           },
         ]
       },
@@ -411,6 +417,7 @@ export default function Planner() {
             title: 'Shibuya Crossing',
             location: 'Shibuya',
             type: 'Activity',
+            coordinates: [139.7005, 35.6595],
           },
         ]
       },
@@ -423,6 +430,7 @@ export default function Planner() {
             title: 'Mount Fuji Day Trip',
             location: 'Hakone',
             type: 'Activity',
+            coordinates: [139.0259, 35.2324],
           },
         ]
       }
