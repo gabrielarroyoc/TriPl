@@ -1,117 +1,85 @@
-import { Clock, Search, TrendingUp } from 'lucide-react'
+import { ArrowRight, Clock, MapPin, Search, TrendingUp } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import { Suspense, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate } from 'react-router-dom'
 import { AutocompleteResults } from '../components/AutocompleteResults'
-import { Badge, Button } from '../components/ui'
-import { FEATURED_DESTINATIONS } from '../constants'
 import { LiquidGlass } from '../components/LiquidGlass'
+import { FEATURED_DESTINATIONS } from '../constants'
 import { cn } from '../lib/utils'
+import type { Destination } from '../types'
 
-const FEATURED_IMAGES = [
-  "https://images.unsplash.com/photo-1533105079780-92b9be482077?auto=format&fit=crop&q=80&w=1200",
-  "https://images.unsplash.com/photo-1516483638261-f4dbaf036963?auto=format&fit=crop&q=80&w=600",
-  "https://images.unsplash.com/photo-1583212292454-1fe6229603b7?auto=format&fit=crop&q=80&w=600"
-]
+const HERO_IMAGE =
+  'https://images.unsplash.com/photo-1533105079780-92b9be482077?auto=format&fit=crop&q=80&w=2000'
 
-const socialAvatars = [
-  "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=100&h=100",
-  "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=100&h=100",
-  "https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&q=80&w=100&h=100",
-  "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&q=80&w=100&h=100"
-]
+function DestinationCard({ destination, index }: { destination: Destination; index: number }) {
+  const { t } = useTranslation()
+  const isFeatured = index === 0
 
-function MiniInspiredCard({ destination, index, t }: { destination: any; index: number; t: any }) {
-  const hasDiscount = index === 0 || index === 2 || index === 3
-  const isOverlay = index === 0
-
-  if (isOverlay) {
-    return (
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 28 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: '-40px' }}
+      transition={{ duration: 0.55, delay: index * 0.08, ease: [0.22, 1, 0.36, 1] }}
+    >
       <Link
         to={`/destination/${destination.city}`}
-        className="group relative block aspect-[3/4] overflow-hidden rounded-3xl border border-white/10 shadow-lg transition-all duration-300 hover:scale-[1.02] hover:border-white/20"
+        className={cn(
+          'group relative block h-full overflow-hidden rounded-[28px] border border-white/10',
+          isFeatured ? 'aspect-[4/5] sm:aspect-[5/4]' : 'aspect-[4/5]',
+        )}
       >
         <img
           src={destination.image}
           alt={destination.city}
-          className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+          className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/45 to-transparent" />
-        
-        {hasDiscount && (
-          <div className="absolute top-3 left-3 bg-white/15 backdrop-blur-md border border-white/20 px-2.5 py-1 rounded-full text-[9px] font-semibold text-white flex items-center gap-1">
-            <span>✨ Partner discount</span>
-          </div>
-        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/35 to-transparent" />
+        <div className="absolute inset-0 opacity-0 transition-opacity duration-500 group-hover:opacity-100 bg-primary/10" />
 
-        <div className="absolute bottom-5 left-5 right-5 text-white">
-          <div className="flex items-center justify-between">
-            <h3 className="text-xl font-bold">{destination.city}</h3>
-            <span className="text-[10px] font-semibold bg-black/40 px-2 py-0.5 rounded-full border border-white/10 flex items-center gap-1">
-              ⭐ 4.9
-            </span>
+        <div className="absolute bottom-0 left-0 right-0 p-5 sm:p-6">
+          <div className="flex items-end justify-between gap-3">
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/45">
+                {destination.country}
+              </p>
+              <h3
+                className={cn(
+                  'mt-1 font-bold tracking-tight text-white transition-colors group-hover:text-white',
+                  isFeatured ? 'text-2xl sm:text-3xl' : 'text-xl',
+                )}
+              >
+                {destination.city}
+              </h3>
+              <p className="mt-1.5 max-w-xs text-sm text-white/60 line-clamp-1">{destination.tagline}</p>
+            </div>
+            <div className="shrink-0 text-right">
+              <p className="text-lg font-bold text-white">
+                {t('home.from')}
+                {destination.pricePerWeek}
+              </p>
+              <p className="text-[10px] uppercase tracking-wider text-white/40">{t('home.per_week')}</p>
+            </div>
           </div>
-          <p className="mt-1 text-xs text-white/80">From ${destination.pricePerWeek} / 7 days</p>
-          <p className="mt-2 text-[9px] text-white/50 uppercase tracking-widest font-semibold">7 recommended hotels</p>
         </div>
       </Link>
-    )
-  }
-
-  return (
-    <Link
-      to={`/destination/${destination.city}`}
-      className="group block transition-all duration-300 hover:scale-[1.01]"
-    >
-      <div className="relative aspect-[4/3] overflow-hidden rounded-3xl border border-white/10 shadow-md">
-        <img
-          src={destination.image}
-          alt={destination.city}
-          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-        />
-        {hasDiscount && (
-          <div className="absolute top-3 left-3 bg-white/15 backdrop-blur-md border border-white/20 px-2.5 py-1 rounded-full text-[9px] font-semibold text-white">
-            ✨ Partner discount
-          </div>
-        )}
-      </div>
-      <div className="mt-3 px-1">
-        <div className="flex items-center justify-between">
-          <h3 className="text-base font-bold text-white group-hover:text-primary transition-colors">
-            {destination.city}
-          </h3>
-          <span className="text-xs font-semibold text-white/80 flex items-center gap-1">
-            ⭐ {(4.5 + index * 0.1).toFixed(1)}
-          </span>
-        </div>
-        <p className="mt-0.5 text-xs text-white/60">From ${destination.pricePerWeek} / 7 days</p>
-        <p className="mt-1.5 text-[9px] text-white/40 uppercase tracking-widest font-semibold">
-          {10 + index * 8} recommended hotels
-        </p>
-      </div>
-    </Link>
+    </motion.div>
   )
 }
 
-export default function Home() {
+function SearchBar() {
   const { t, i18n } = useTranslation()
   const navigate = useNavigate()
-
   const [searchQuery, setSearchQuery] = useState('')
   const [debouncedQuery, setDebouncedQuery] = useState('')
   const [recentSearches, setRecentSearches] = useState<string[]>([])
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
-  const [selectedImage, setSelectedImage] = useState(0)
-  const [isReadMore, setIsReadMore] = useState(false)
-
   const dropdownRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const saved = localStorage.getItem('recentSearches')
-    if (saved) {
-      setRecentSearches(JSON.parse(saved))
-    }
+    if (saved) setRecentSearches(JSON.parse(saved))
   }, [])
 
   useEffect(() => {
@@ -125,9 +93,7 @@ export default function Home() {
   }, [])
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedQuery(searchQuery)
-    }, 600)
+    const timer = setTimeout(() => setDebouncedQuery(searchQuery), 600)
     return () => clearTimeout(timer)
   }, [searchQuery])
 
@@ -152,296 +118,312 @@ export default function Home() {
     setSearchQuery(suggestion)
     saveRecentSearch(suggestion)
     setIsDropdownOpen(false)
+    navigate(`/destination/${encodeURIComponent(suggestion)}`)
   }
 
-  const featuredDestination = FEATURED_DESTINATIONS[0]
-
   return (
-    <div className="relative min-h-screen bg-background overflow-hidden">
-      {/* Glow effects */}
-      <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] rounded-full bg-primary/10 blur-[130px] pointer-events-none" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] rounded-full bg-blue-500/5 blur-[160px] pointer-events-none" />
-      
-      <div className="relative mx-auto max-w-7xl px-6 pt-32 pb-24 md:px-12 bg-grid rounded-b-[40px] border-b border-white/5">
-        {/* Main Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-[1.25fr_0.75fr] gap-14 items-start">
-          
-          {/* Left Column */}
+    <div ref={dropdownRef} className="relative w-full max-w-xl">
+      <LiquidGlass
+        refractionStrength={16}
+        frostedIntensity={22}
+        tintColor="rgba(255, 255, 255, 0.1)"
+        className="overflow-visible rounded-2xl border border-white/25 shadow-2xl"
+        contentClassName="flex flex-row items-center gap-2 p-1.5 w-full"
+      >
+        <div className="flex min-w-0 flex-1 items-center gap-2.5 px-3">
+          <Search className="h-5 w-5 shrink-0 text-white/75" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(event) => {
+              setSearchQuery(event.target.value)
+              setIsDropdownOpen(true)
+            }}
+            onFocus={() => setIsDropdownOpen(true)}
+            onKeyDown={(event) => event.key === 'Enter' && handleSearch()}
+            placeholder={t('home.search_placeholder')}
+            className="w-full bg-transparent text-sm font-medium text-white caret-white outline-none placeholder:text-white/55 sm:text-base"
+          />
+        </div>
+        <button
+          onClick={handleSearch}
+          className="flex shrink-0 items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-[11px] font-bold uppercase tracking-wider text-white transition-all duration-300 hover:bg-primary/90 active:scale-[0.98] sm:px-6 sm:py-3 sm:text-xs"
+        >
+          <Search size={14} className="sm:hidden" />
+          <span className="hidden sm:inline">{t('home.search_button')}</span>
+        </button>
+      </LiquidGlass>
+
+      <AnimatePresence>
+        {isDropdownOpen && (
           <motion.div
-            initial={{ opacity: 0, y: 24 }}
+            initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, ease: 'easeOut' }}
-            className="flex flex-col text-white"
+            exit={{ opacity: 0, y: 8 }}
+            transition={{ duration: 0.2 }}
+            className="absolute left-0 top-full z-30 mt-2 w-full overflow-hidden rounded-2xl border border-white/10 bg-surface/95 text-left text-on-surface shadow-2xl backdrop-blur-xl"
           >
-            <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold leading-[1.1] tracking-tight max-w-xl">
-              {t('home.hero_title')}
-            </h1>
-            
-            <h2 className="mt-14 text-2xl font-bold text-white/90 border-b border-white/10 pb-3">
-              {t('explore.popular_destinations', 'Popular destinations')}
-            </h2>
-            
-            <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-8">
-              {FEATURED_DESTINATIONS.map((destination, index) => (
-                <MiniInspiredCard
-                  key={destination.city}
-                  destination={destination}
-                  index={index}
-                  t={t}
-                />
-              ))}
-            </div>
-          </motion.div>
-          
-          {/* Right Column */}
-          <motion.div
-            initial={{ opacity: 0, x: 24 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.2, duration: 0.7, ease: 'easeOut' }}
-            className="flex flex-col gap-8"
-          >
-            {/* Search Box Card */}
-            <div className="flex flex-col">
-              <div ref={dropdownRef} className="relative w-full">
-                <LiquidGlass
-                  refractionStrength={18}
-                  frostedIntensity={20}
-                  tintColor="rgba(255, 255, 255, 0.08)"
-                  className="border border-white/25 shadow-2xl pointer-events-auto rounded-2xl overflow-visible"
-                  contentClassName="flex flex-row gap-2 p-1.5 items-center w-full justify-between"
-                >
-                  <div className="flex items-center gap-2 px-2 flex-1 min-w-0">
-                    <Search className="h-5 w-5 text-white/80 shrink-0" />
-                    <input
-                      type="text"
-                      value={searchQuery}
-                      onChange={(event) => {
-                        setSearchQuery(event.target.value)
-                        setIsDropdownOpen(true)
-                      }}
-                      onFocus={() => setIsDropdownOpen(true)}
-                      onKeyDown={(event) => event.key === 'Enter' && handleSearch()}
-                      placeholder={t('home.search_placeholder')}
-                      className="w-full bg-transparent text-sm sm:text-base font-medium text-white caret-white placeholder:text-white/60 outline-none"
-                    />
+            {searchQuery.trim() === '' ? (
+              <div className="p-3">
+                {recentSearches.length > 0 && (
+                  <div className="mb-3">
+                    <p className="px-3 pb-2 text-[10px] font-bold uppercase tracking-wider text-outline">
+                      {t('home.recent_searches')}
+                    </p>
+                    {recentSearches.map((search) => (
+                      <button
+                        key={search}
+                        onClick={() => handleSuggestionClick(search)}
+                        className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-white transition-colors hover:bg-primary/15"
+                      >
+                        <Clock size={15} className="text-primary" />
+                        {search}
+                      </button>
+                    ))}
                   </div>
+                )}
+
+                <p className="px-3 pb-2 text-[10px] font-bold uppercase tracking-wider text-outline">
+                  {t('home.trending_destinations_search')}
+                </p>
+                {FEATURED_DESTINATIONS.slice(0, 3).map((destination) => (
                   <button
-                    onClick={handleSearch}
-                    className="bg-white/5 hover:bg-white/15 text-white border border-white/25 hover:border-white/50 font-bold uppercase tracking-wider text-[10px] sm:text-xs px-4 py-2.5 sm:px-6 sm:py-3.5 rounded-full transition-all duration-300 active:scale-[0.98] flex items-center justify-center gap-1.5 shrink-0"
+                    key={destination.city}
+                    onClick={() => handleSuggestionClick(destination.city)}
+                    className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-white transition-colors hover:bg-primary/15"
                   >
-                    <Search size={14} className="sm:hidden" />
-                    <span className="hidden sm:inline">{t('home.search_button')}</span>
-                  </button>
-                </LiquidGlass>
-                
-                <AnimatePresence>
-                  {isDropdownOpen && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 6 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: 6 }}
-                      className="absolute left-0 top-full z-20 mt-2 w-full overflow-hidden rounded-2xl border border-outline-variant bg-surface text-left text-on-surface shadow-2xl"
-                    >
-                      {searchQuery.trim() === '' ? (
-                        <div className="p-3">
-                          {recentSearches.length > 0 && (
-                            <div className="mb-3">
-                              <p className="px-3 pb-2 text-label-sm text-slate-500">
-                                {t('home.recent_searches')}
-                              </p>
-                              {recentSearches.map((search) => (
-                                <button
-                                  key={search}
-                                  onClick={() => handleSuggestionClick(search)}
-                                  className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-white hover:bg-primary-container/40 hover:text-on-primary-container transition-colors"
-                                >
-                                  <Clock size={16} className="text-primary" />
-                                  {search}
-                                </button>
-                              ))}
-                            </div>
-                          )}
-
-                          <p className="px-3 pb-2 text-label-sm text-slate-500">
-                            {t('home.trending_destinations_search')}
-                          </p>
-                          {FEATURED_DESTINATIONS.slice(0, 3).map((destination) => (
-                            <button
-                              key={destination.city}
-                              onClick={() => handleSuggestionClick(destination.city)}
-                              className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-white hover:bg-primary-container/40 hover:text-on-primary-container transition-colors"
-                            >
-                              <TrendingUp size={16} className="text-primary" />
-                              {destination.city}, {destination.country}
-                            </button>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="min-h-[104px] p-2">
-                          {debouncedQuery.trim() === '' || debouncedQuery !== searchQuery ? (
-                            <div className="flex h-24 items-center justify-center">
-                              <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary/20 border-t-primary" />
-                            </div>
-                          ) : (
-                            <Suspense
-                              fallback={
-                                <div className="space-y-3 p-4">
-                                  <div className="h-4 w-48 animate-pulse rounded bg-primary-container" />
-                                  <div className="h-4 w-32 animate-pulse rounded bg-primary-container" />
-                                </div>
-                              }
-                            >
-                              <AutocompleteResults
-                                query={debouncedQuery}
-                                lang={i18n.language === 'pt' ? 'pt-BR' : 'en'}
-                                onSelect={handleSuggestionClick}
-                                isDark={true}
-                              />
-                            </Suspense>
-                          )}
-                        </div>
-                      )}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-              <p className="mt-4 text-xs text-white/60 leading-relaxed pl-1 max-w-md">
-                {t('home.hero_subtitle')}
-              </p>
-            </div>
-
-            {/* Featured Destination Card (Inspired Card) */}
-            <div className="rounded-3xl border border-white/10 bg-surface/50 backdrop-blur-md p-6 shadow-2xl">
-              <div className="relative aspect-[16/10] overflow-hidden rounded-2xl border border-white/5 shadow-inner">
-                <img
-                  src={FEATURED_IMAGES[selectedImage]}
-                  alt="Featured destination view"
-                  className="h-full w-full object-cover transition-all duration-500"
-                />
-              </div>
-
-              {/* Thumbnails */}
-              <div className="mt-3 flex gap-2.5">
-                {FEATURED_IMAGES.map((img, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => setSelectedImage(idx)}
-                    className={cn(
-                      "relative h-12 w-20 overflow-hidden rounded-lg border transition-all duration-200",
-                      selectedImage === idx
-                        ? "border-primary scale-[1.03] ring-1 ring-primary"
-                        : "border-white/10 opacity-70 hover:opacity-100"
-                    )}
-                  >
-                    <img src={img} className="h-full w-full object-cover" />
+                    <TrendingUp size={15} className="text-primary" />
+                    {destination.city}, {destination.country}
                   </button>
                 ))}
               </div>
-
-              {/* Title & Price */}
-              <div className="mt-5 flex items-start justify-between">
-                <div>
-                  <h3 className="text-2xl font-bold text-white">{featuredDestination.city}</h3>
-                  <p className="text-xs text-primary font-medium">{featuredDestination.tagline}</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-2xl font-extrabold text-white">${featuredDestination.pricePerWeek}</p>
-                  <p className="text-[9px] text-white/50 uppercase tracking-widest font-semibold">for 7 days</p>
-                </div>
-              </div>
-
-              {/* Social Proof */}
-              <div className="mt-4 flex items-center justify-between border-t border-b border-white/5 py-3">
-                <div className="flex items-center gap-2">
-                  <div className="flex -space-x-2">
-                    {socialAvatars.map((av, i) => (
-                      <img
-                        key={i}
-                        src={av}
-                        className="h-6 w-6 rounded-full border border-surface object-cover shadow-sm"
-                      />
-                    ))}
-                    <div className="flex h-6 w-6 items-center justify-center rounded-full border border-surface bg-primary-container text-[8px] font-bold text-on-primary-container">
-                      +12
-                    </div>
+            ) : (
+              <div className="min-h-[104px] p-2">
+                {debouncedQuery.trim() === '' || debouncedQuery !== searchQuery ? (
+                  <div className="flex h-24 items-center justify-center">
+                    <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary/20 border-t-primary" />
                   </div>
-                  <span className="text-[11px] text-white/70">
-                    16 of your friends have been there
-                  </span>
-                </div>
-                <Link to="/explore" className="text-[11px] font-semibold text-primary hover:underline">
-                  View reviews
-                </Link>
-              </div>
-
-              {/* Description */}
-              <div className="mt-4">
-                <p className="text-xs text-white/70 leading-relaxed">
-                  {isReadMore
-                    ? featuredDestination.description + " Wander through beautiful cliffside paths, savor authentic local cuisine, and experience the timeless romance of the Amalfi Coast."
-                    : featuredDestination.description.slice(0, 110) + "..."}
-                  <button
-                    onClick={() => setIsReadMore(!isReadMore)}
-                    className="ml-1 text-xs font-bold text-primary hover:underline"
+                ) : (
+                  <Suspense
+                    fallback={
+                      <div className="space-y-3 p-4">
+                        <div className="h-4 w-48 animate-pulse rounded bg-primary-container" />
+                        <div className="h-4 w-32 animate-pulse rounded bg-primary-container" />
+                      </div>
+                    }
                   >
-                    {isReadMore ? "Read less" : "Read more"}
-                  </button>
-                </p>
+                    <AutocompleteResults
+                      query={debouncedQuery}
+                      lang={i18n.language === 'pt' ? 'pt-BR' : 'en'}
+                      onSelect={handleSuggestionClick}
+                      isDark={true}
+                    />
+                  </Suspense>
+                )}
               </div>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  )
+}
 
-              {/* Action Buttons */}
-              <div className="mt-6 flex gap-3">
-                <Button
-                  as={Link}
-                  to={`/destination/${featuredDestination.city}`}
-                  className="flex-1 justify-center py-3 rounded-xl border border-white/20 bg-transparent text-white hover:bg-white/5 text-xs font-semibold"
-                >
-                  Learn more
-                </Button>
-                <Button
-                  as={Link}
-                  to={`/planner?destination=${featuredDestination.city}`}
-                  className="flex-1 justify-center py-3 rounded-xl bg-primary text-white hover:bg-primary/95 text-xs font-bold"
-                >
-                  Order now
-                </Button>
+export default function Home() {
+  const { t } = useTranslation()
+  const featured = FEATURED_DESTINATIONS[0]
+
+  return (
+    <div className="relative min-h-screen overflow-hidden bg-background text-on-surface">
+      {/* ── Hero ── */}
+      <section className="relative flex min-h-[100svh] flex-col justify-end overflow-hidden">
+        <motion.img
+          src={HERO_IMAGE}
+          alt=""
+          aria-hidden="true"
+          initial={{ scale: 1.08 }}
+          animate={{ scale: 1 }}
+          transition={{ duration: 1.6, ease: [0.22, 1, 0.36, 1] }}
+          className="absolute inset-0 h-full w-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/70 to-background/25" />
+        <div className="absolute inset-0 bg-gradient-to-r from-background/80 via-transparent to-transparent" />
+        <div className="absolute inset-0 bg-grid opacity-40" />
+
+        <div className="relative z-10 mx-auto w-full max-w-7xl px-6 pb-16 pt-32 md:px-12 md:pb-24">
+          <motion.div
+            initial={{ opacity: 0, y: 32 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+            className="max-w-2xl"
+          >
+            <p className="text-4xl font-extrabold tracking-tight text-white sm:text-5xl md:text-6xl">
+              TriPl
+            </p>
+            <h1 className="mt-4 text-2xl font-semibold leading-snug tracking-tight text-white/90 sm:text-3xl md:text-4xl md:leading-tight">
+              {t('home.hero_title')}
+            </h1>
+            <p className="mt-4 max-w-md text-sm leading-relaxed text-white/60 sm:text-base">
+              {t('home.hero_subtitle')}
+            </p>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.25, duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+            className="mt-8"
+          >
+            <SearchBar />
+          </motion.div>
+        </div>
+      </section>
+
+      {/* ── Destinations ── */}
+      <section className="relative mx-auto max-w-7xl px-6 py-20 md:px-12 md:py-28">
+        <div className="absolute left-1/2 top-0 h-[40%] w-[50%] -translate-x-1/2 rounded-full bg-primary/5 blur-[120px] pointer-events-none" />
+
+        <div className="relative flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h2 className="text-3xl font-extrabold tracking-tight text-white md:text-4xl">
+              {t('explore.popular_destinations')}
+            </h2>
+            <p className="mt-2 max-w-md text-sm text-white/50">{t('home.destinations_subtitle')}</p>
+          </div>
+          <Link
+            to="/explore"
+            className="group inline-flex items-center gap-2 text-sm font-semibold text-primary transition-colors hover:text-primary/80"
+          >
+            {t('home.view_all')}
+            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+          </Link>
+        </div>
+
+        <div className="relative mt-12 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {FEATURED_DESTINATIONS.map((destination, index) => (
+            <div key={destination.city} className={index === 0 ? 'sm:col-span-2 lg:col-span-2' : ''}>
+              <DestinationCard destination={destination} index={index} />
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── Featured spotlight ── */}
+      <section className="relative overflow-hidden border-y border-white/5">
+        <div className="absolute inset-0">
+          <img
+            src={featured.image}
+            alt=""
+            aria-hidden="true"
+            className="h-full w-full object-cover opacity-30"
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-background via-background/90 to-background/60" />
+        </div>
+
+        <div className="relative mx-auto grid max-w-7xl grid-cols-1 items-center gap-10 px-6 py-20 md:grid-cols-2 md:px-12 md:py-28">
+          <motion.div
+            initial={{ opacity: 0, x: -24 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-primary">
+              {t('home.editors_choice')}
+            </p>
+            <h2 className="mt-3 text-4xl font-extrabold tracking-tight text-white md:text-5xl">
+              {featured.city}
+            </h2>
+            <p className="mt-2 text-base text-primary/90">{featured.tagline}</p>
+            <p className="mt-5 max-w-md text-sm leading-relaxed text-white/55">{featured.description}</p>
+
+            <div className="mt-6 flex items-center gap-2 text-sm text-white/50">
+              <MapPin className="h-4 w-4 text-primary" />
+              {featured.city}, {featured.country}
+            </div>
+
+            <div className="mt-8 flex flex-wrap gap-3">
+              <Link
+                to={`/destination/${featured.city}`}
+                className="inline-flex items-center justify-center rounded-xl border border-white/20 bg-white/5 px-6 py-3 text-xs font-semibold text-white backdrop-blur-sm transition-all hover:bg-white/10"
+              >
+                {t('home.learn_more')}
+              </Link>
+              <Link
+                to={`/planner?destination=${featured.city}`}
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-xs font-bold text-white transition-all hover:bg-primary/90"
+              >
+                {t('home.plan_trip')}
+                <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
+            </div>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, scale: 0.96 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+            className="relative aspect-[4/3] overflow-hidden rounded-[32px] border border-white/10 shadow-2xl"
+          >
+            <img
+              src={featured.image}
+              alt={featured.city}
+              className="h-full w-full object-cover"
+            />
+            <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between rounded-2xl border border-white/15 bg-background/70 px-4 py-3 backdrop-blur-md">
+              <div>
+                <p className="text-lg font-bold text-white">
+                  {t('home.from')}
+                  {featured.pricePerWeek}
+                </p>
+                <p className="text-[10px] uppercase tracking-wider text-white/45">{t('home.per_week')}</p>
+              </div>
+              <div className="flex gap-1.5">
+                {featured.tags.slice(0, 2).map((tag) => (
+                  <span
+                    key={tag}
+                    className="rounded-full border border-white/15 bg-white/10 px-2.5 py-1 text-[10px] font-semibold text-white/80"
+                  >
+                    {tag}
+                  </span>
+                ))}
               </div>
             </div>
           </motion.div>
-          
         </div>
-      </div>
-      
-      {/* TriPl Experience Features highlights section */}
-      <section className="mx-auto max-w-7xl px-6 py-20 md:px-12 text-white relative">
-        <div className="absolute top-1/2 left-1/2 translate-x-[-50%] translate-y-[-50%] w-[50%] h-[50%] rounded-full bg-primary/5 blur-[120px] pointer-events-none" />
-        
-        <div className="text-center max-w-xl mx-auto">
-          <Badge className="border-white/10 bg-white/5 text-primary text-[10px] uppercase font-bold tracking-wider mb-3">
-            {t('home.experience_title')}
-          </Badge>
-          <h2 className="text-3xl font-extrabold tracking-tight">
+      </section>
+
+      {/* ── Experience ── */}
+      <section className="relative mx-auto max-w-7xl px-6 py-20 md:px-12 md:py-28">
+        <div className="absolute right-0 top-1/3 h-[40%] w-[40%] rounded-full bg-blue-500/5 blur-[140px] pointer-events-none" />
+
+        <div className="relative max-w-xl">
+          <h2 className="text-3xl font-extrabold tracking-tight text-white md:text-4xl">
             {t('home.experience_subtitle')}
           </h2>
+          <p className="mt-3 text-sm text-white/50">{t('home.experience_title')}</p>
         </div>
 
-        <div className="mt-14 grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="relative mt-14 grid grid-cols-1 gap-6 md:grid-cols-3">
           {[
-            { title: t('home.discover_title'), desc: t('home.discover_desc'), color: 'from-blue-500/20 to-transparent' },
-            { title: t('home.customize_title'), desc: t('home.customize_desc'), color: 'from-primary/20 to-transparent' },
-            { title: t('home.collaborate_title'), desc: t('home.collaborate_desc'), color: 'from-indigo-500/20 to-transparent' }
+            { title: t('home.discover_title'), desc: t('home.discover_desc') },
+            { title: t('home.customize_title'), desc: t('home.customize_desc') },
+            { title: t('home.collaborate_title'), desc: t('home.collaborate_desc') },
           ].map((item, index) => (
-            <div
-              key={index}
-              className="group relative overflow-hidden rounded-3xl border border-white/5 bg-surface/30 p-8 hover:border-white/10 transition-all duration-300 hover:scale-[1.02]"
+            <motion.div
+              key={item.title}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: index * 0.1, ease: [0.22, 1, 0.36, 1] }}
+              className="group relative border-t border-white/10 pt-6"
             >
-              <div className={`absolute inset-0 bg-gradient-to-br ${item.color} opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
-              <div className="relative z-10">
-                <span className="text-3xl font-bold text-primary/30 group-hover:text-primary transition-colors">0{index + 1}</span>
-                <h3 className="mt-4 text-xl font-bold">{item.title}</h3>
-                <p className="mt-2 text-sm text-white/60 leading-relaxed">{item.desc}</p>
-              </div>
-            </div>
+              <span className="text-sm font-bold tracking-widest text-primary/50 transition-colors group-hover:text-primary">
+                0{index + 1}
+              </span>
+              <h3 className="mt-4 text-xl font-bold text-white">{item.title}</h3>
+              <p className="mt-2 text-sm leading-relaxed text-white/50">{item.desc}</p>
+            </motion.div>
           ))}
         </div>
       </section>

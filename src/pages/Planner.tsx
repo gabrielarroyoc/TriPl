@@ -29,10 +29,13 @@ import { useAuth } from '../store/AuthContext'
 import { useToastStore } from '../store/useToastStore'
 import useSWR from 'swr'
 import { FlightSkeleton } from '../components/Skeletons'
+import { fetchWikipediaSummary, getWikipediaSummaryImage } from '../lib/wikipedia'
 import { ActivityCard } from '../components/planner/ActivityCard'
 import { PlannerAccordion } from '../components/planner/PlannerAccordion'
 import { useStaggerReveal, useTextSwap } from '../hooks/useAuthTransitions'
 import { useAvatarGroupHover, useVerticalDayPill } from '../hooks/usePlannerTransitions'
+import { fetchMapboxAutocomplete } from '../lib/mapbox'
+import { Map, MapArc, MapMarker, MarkerContent } from '../components/ui/map'
 
 const flightFetcher = async (url: string) => {
   try {
@@ -127,6 +130,7 @@ interface Activity {
   imageUrl?: string
   isCheckedIn?: boolean
   badges?: string[]
+  coordinates?: [number, number] // [lng, lat]
 }
 
 
@@ -174,7 +178,7 @@ function AddActivityForm({
   onAdd,
 }: {
   dayIndex: number
-  onAdd: (activity: Activity) => void
+  onAdd: (activity: Activity) => Promise<void>
 }) {
   const { t, i18n } = useTranslation()
   const [formData, setFormData] = useState({
@@ -186,6 +190,7 @@ function AddActivityForm({
     imageUrl: '',
   })
   const [isSearching, setIsSearching] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const { addToast } = useToastStore()
 
   const fetchImage = async () => {
@@ -217,6 +222,18 @@ function AddActivityForm({
     }
   }
 
+  const handleSubmit = async () => {
+    if (isSubmitting) return
+    setIsSubmitting(true)
+    try {
+      await onAdd({ ...formData, id: Date.now().toString() })
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
@@ -227,8 +244,9 @@ function AddActivityForm({
           <input
             type="time"
             value={formData.time}
+            disabled={isSubmitting}
             onChange={e => setFormData({ ...formData, time: e.target.value })}
-            className="w-full bg-transparent text-on-surface border border-outline-variant rounded-lg px-4 py-2 text-sm outline-none focus:border-primary"
+            className="w-full bg-transparent text-on-surface border border-outline-variant rounded-lg px-4 py-2 text-sm outline-none focus:border-primary disabled:opacity-50"
           />
         </div>
         <div>
@@ -237,10 +255,11 @@ function AddActivityForm({
           </label>
           <select
             value={formData.type}
+            disabled={isSubmitting}
             onChange={e =>
               setFormData({ ...formData, type: e.target.value as any })
             }
-            className="w-full bg-transparent text-on-surface border border-outline-variant rounded-lg px-4 py-2 text-sm outline-none focus:border-primary"
+            className="w-full bg-transparent text-on-surface border border-outline-variant rounded-lg px-4 py-2 text-sm outline-none focus:border-primary disabled:opacity-50"
           >
             {ACTIVITY_TYPES.map(type => (
               <option key={type} value={type}>
@@ -258,9 +277,10 @@ function AddActivityForm({
         <input
           type="text"
           value={formData.title}
+          disabled={isSubmitting}
           onChange={e => setFormData({ ...formData, title: e.target.value })}
           placeholder="e.g. Flight to Tokyo"
-          className="w-full bg-transparent text-on-surface border border-outline-variant rounded-lg px-4 py-2 text-sm outline-none focus:border-primary"
+          className="w-full bg-transparent text-on-surface border border-outline-variant rounded-lg px-4 py-2 text-sm outline-none focus:border-primary disabled:opacity-50"
         />
       </div>
 
@@ -272,13 +292,14 @@ function AddActivityForm({
           <input
             type="text"
             value={formData.location}
+            disabled={isSubmitting}
             onChange={e => setFormData({ ...formData, location: e.target.value })}
             placeholder="e.g. Haneda Airport"
-            className="flex-1 bg-transparent border border-outline-variant rounded-lg px-4 py-2 text-sm outline-none focus:border-primary"
+            className="flex-1 bg-transparent border border-outline-variant rounded-lg px-4 py-2 text-sm outline-none focus:border-primary disabled:opacity-50"
           />
           <button
             onClick={fetchImage}
-            disabled={isSearching}
+            disabled={isSearching || isSubmitting}
             className="t-planner-icon-btn px-3 bg-primary-container text-primary rounded-lg hover:bg-primary/10 disabled:opacity-50 disabled:cursor-not-allowed"
             title="Search for image"
           >
@@ -292,7 +313,8 @@ function AddActivityForm({
           <img src={formData.imageUrl} className="w-full h-full object-cover" alt="Preview" />
           <button 
             onClick={() => setFormData(prev => ({ ...prev, imageUrl: '' }))}
-            className="absolute top-2 right-2 p-1.5 bg-on-primary-container/80 text-white rounded-md opacity-0 group-hover:opacity-100 transition-opacity"
+            disabled={isSubmitting}
+            className="absolute top-2 right-2 p-1.5 bg-on-primary-container/80 text-white rounded-md opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50"
           >
             <X size={14} />
           </button>
@@ -305,20 +327,43 @@ function AddActivityForm({
         </label>
         <textarea
           value={formData.notes}
+          disabled={isSubmitting}
           onChange={e => setFormData({ ...formData, notes: e.target.value })}
           placeholder="..."
-          className="w-full bg-transparent text-on-surface border border-outline-variant rounded-lg px-4 py-2 text-sm outline-none focus:border-primary h-20"
+          className="w-full bg-transparent text-on-surface border border-outline-variant rounded-lg px-4 py-2 text-sm outline-none focus:border-primary h-20 disabled:opacity-50"
         />
       </div>
 
       <button
-        onClick={() => onAdd({ ...formData, id: Date.now().toString() })}
-        className="t-planner-btn w-full bg-primary text-white py-2.5 rounded-xl font-bold uppercase tracking-widest text-xs hover:bg-on-primary-container dark:bg-primary-container dark:text-on-primary-container dark:hover:bg-primary dark:hover:text-white shadow-lg shadow-primary/15"
+        onClick={handleSubmit}
+        disabled={isSubmitting}
+        className="t-planner-btn w-full bg-primary text-white py-2.5 rounded-xl font-bold uppercase tracking-widest text-xs hover:bg-on-primary-container dark:bg-primary-container dark:text-on-primary-container dark:hover:bg-primary dark:hover:text-white shadow-lg shadow-primary/15 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
       >
-        {t('planner.add_activity')}
+        {isSubmitting ? (
+          <>
+            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            {t('planner.saving', 'Saving...')}
+          </>
+        ) : (
+          t('planner.add_activity')
+        )}
       </button>
     </div>
   )
+}
+
+const geocodeLocation = async (location: string, lang: string): Promise<[number, number] | undefined> => {
+  if (!location.trim()) return undefined
+  try {
+    const results = await fetchMapboxAutocomplete(location, lang)
+    if (results && results.length > 0) {
+      const first = results[0]
+      return [first.coordinates.lng, first.coordinates.lat]
+    }
+  } catch (err) {
+    console.error('Failed to geocode location:', err)
+  }
+  return undefined
 }
 
 export default function Planner() {
@@ -328,6 +373,7 @@ export default function Planner() {
   const [flightNumber, setFlightNumber] = useState('')
   const [searchedFlight, setSearchedFlight] = useState('')
   const [isEditingImageSearch, setIsEditingImageSearch] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
   const autoSaveErrorShownRef = useRef(false)
 
   const fetchEditImage = async () => {
@@ -373,6 +419,7 @@ export default function Planner() {
             title: 'NH 202 · HND Arrival',
             location: 'Terminal 3, Haneda Airport',
             type: 'Flight',
+            coordinates: [139.7798, 35.5494],
           },
           {
             id: '2',
@@ -380,6 +427,7 @@ export default function Planner() {
             title: 'The Trunk Hotel',
             location: 'Shibuya-ku, Jingumae 5-31',
             type: 'Hotel',
+            coordinates: [139.7016, 35.6634],
           },
         ]
       },
@@ -392,6 +440,7 @@ export default function Planner() {
             title: 'Senso-ji Temple',
             location: 'Asakusa, Tokyo',
             type: 'Activity',
+            coordinates: [139.7967, 35.7148],
           },
           {
             id: '4',
@@ -399,6 +448,7 @@ export default function Planner() {
             title: 'Lunch at Tsukiji',
             location: 'Tsukiji Market',
             type: 'Restaurant',
+            coordinates: [139.7712, 35.6628],
           },
         ]
       },
@@ -411,6 +461,7 @@ export default function Planner() {
             title: 'Shibuya Crossing',
             location: 'Shibuya',
             type: 'Activity',
+            coordinates: [139.7005, 35.6595],
           },
         ]
       },
@@ -423,6 +474,7 @@ export default function Planner() {
             title: 'Mount Fuji Day Trip',
             location: 'Hakone',
             type: 'Activity',
+            coordinates: [139.0259, 35.2324],
           },
         ]
       }
@@ -511,8 +563,7 @@ export default function Planner() {
         const state = room.presenceState()
         // Flatten the object to get all connected user states
         const users = Object.values(state).flatMap((presenceList: any) => presenceList)
-        // Deduplicate by user id (in case someone has multiple tabs open)
-        const uniqueUsers = Array.from(new Map(users.map((u: any) => [u.id, u])).values())
+        const uniqueUsers = users.filter((u: any, idx, self) => self.findIndex(x => x.id === u.id) === idx)
         setPresentUsers(uniqueUsers as { id: string, email: string }[])
       })
       .subscribe(async (status) => {
@@ -700,31 +751,50 @@ export default function Planner() {
     setSelectedDayIndex(Math.max(0, selectedDayIndex - 1))
   }
 
-  const addActivity = (dayIndex: number, activity: Activity) => {
+  const addActivity = async (dayIndex: number, activity: Activity) => {
     const newDays = [...trip.days]
     if (!newDays[dayIndex]) return
-    newDays[dayIndex].activities = [...newDays[dayIndex].activities, activity]
+    
+    const lang = i18n.language === 'pt' ? 'pt-BR' : 'en'
+    const coords = await geocodeLocation(activity.location, lang)
+    const activityWithCoords = { ...activity, coordinates: coords }
+    
+    newDays[dayIndex].activities = [...newDays[dayIndex].activities, activityWithCoords]
     const newTrip = { ...trip, days: newDays }
     saveTrip(newTrip)
     addToast(t('planner.activity_added', 'Activity added to your itinerary.'), 'success')
     setShowAddActivity(false)
   }
 
-  const updateActivity = (
+  const updateActivity = async (
     dayIndex: number,
     activityId: string,
     updated: Activity,
   ) => {
     const newDays = [...trip.days]
     if (!newDays[dayIndex]) return
-    newDays[dayIndex].activities = newDays[dayIndex].activities.map(act =>
-      act.id === activityId ? updated : act,
-    )
-    const newTrip = { ...trip, days: newDays }
-    saveTrip(newTrip)
-    addToast(t('planner.activity_updated', 'Activity updated.'), 'success')
-    setEditingActivity(null)
-    setEditFormData(null)
+    
+    setIsSaving(true)
+    try {
+      const oldAct = newDays[dayIndex].activities.find(act => act.id === activityId)
+      let coords = updated.coordinates
+      if (!coords || oldAct?.location !== updated.location) {
+        const lang = i18n.language === 'pt' ? 'pt-BR' : 'en'
+        coords = await geocodeLocation(updated.location, lang)
+      }
+      const updatedWithCoords = { ...updated, coordinates: coords }
+      
+      newDays[dayIndex].activities = newDays[dayIndex].activities.map(act =>
+        act.id === activityId ? updatedWithCoords : act,
+      )
+      const newTrip = { ...trip, days: newDays }
+      saveTrip(newTrip)
+      addToast(t('planner.activity_updated', 'Activity updated.'), 'success')
+      setEditingActivity(null)
+      setEditFormData(null)
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   const deleteActivity = (dayIndex: number, activityId: string) => {
@@ -746,6 +816,28 @@ export default function Planner() {
   } catch (e) {
     dayDateFormatted = currentDay?.date || ''
   }
+
+  const sortedActivities = [...dayActivities].sort((a, b) => a.time.localeCompare(b.time))
+  const routeMarkers = sortedActivities
+    .filter(act => act.coordinates)
+    .map((act, index) => ({
+      id: act.id,
+      label: (index + 1).toString(),
+      lng: act.coordinates![0],
+      lat: act.coordinates![1],
+      title: act.title,
+      location: act.location,
+    }))
+
+  const routeArcs = routeMarkers.slice(0, -1).map((m, i) => ({
+    id: `arc-${m.id}-${routeMarkers[i + 1].id}`,
+    from: [m.lng, m.lat] as [number, number],
+    to: [routeMarkers[i + 1].lng, routeMarkers[i + 1].lat] as [number, number],
+  }))
+
+  const mapCenter: [number, number] = routeMarkers.length > 0
+    ? [routeMarkers[0].lng, routeMarkers[0].lat]
+    : [139.6917, 35.6895] // Default Tokyo
 
   return (
     <div className="relative">
@@ -1027,8 +1119,8 @@ export default function Planner() {
           >
             <AddActivityForm
               dayIndex={selectedDayIndex}
-              onAdd={activity => {
-                addActivity(selectedDayIndex, activity)
+              onAdd={async activity => {
+                await addActivity(selectedDayIndex, activity)
                 setShowAddActivity(false)
               }}
             />
@@ -1153,6 +1245,7 @@ export default function Planner() {
                 </div>
                 <button
                   type="button"
+                  disabled={isSaving}
                   onClick={() =>
                     updateActivity(
                       editingActivity.dayIndex,
@@ -1160,9 +1253,16 @@ export default function Planner() {
                       editFormData,
                     )
                   }
-                  className="t-planner-btn w-full bg-primary text-white py-2.5 rounded-xl font-bold uppercase tracking-widest text-xs hover:bg-on-primary-container dark:bg-primary-container dark:text-on-primary-container dark:hover:bg-primary dark:hover:text-white"
+                  className="t-planner-btn w-full bg-primary text-white py-2.5 rounded-xl font-bold uppercase tracking-widest text-xs hover:bg-on-primary-container dark:bg-primary-container dark:text-on-primary-container dark:hover:bg-primary dark:hover:text-white disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
-                  {t('planner.save_changes')}
+                  {isSaving ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      {t('planner.saving', 'Saving...')}
+                    </>
+                  ) : (
+                    t('planner.save_changes')
+                  )}
                 </button>
               </div>
             </PlannerAccordion>
@@ -1230,7 +1330,42 @@ export default function Planner() {
       <section className="md:col-span-4 space-y-6">
         {dayActivities.length > 0 && (
           <div className="bg-surface border border-outline-variant rounded-lg overflow-hidden">
-
+            {routeMarkers.length > 0 && (
+              <div className="h-[200px] w-full border-b border-outline-variant relative overflow-hidden bg-primary-container/20">
+                <Map
+                  viewport={{
+                    center: mapCenter,
+                    zoom: 11,
+                  }}
+                  className="w-full h-full"
+                  interactive={true}
+                >
+                  {routeArcs.length > 0 && (
+                    <MapArc
+                      data={routeArcs}
+                      paint={{
+                        "line-color": "var(--color-primary, #3b82f6)",
+                        "line-width": 2,
+                        "line-dasharray": [3, 3],
+                      }}
+                      interactive={false}
+                    />
+                  )}
+                  {routeMarkers.map(m => (
+                    <MapMarker key={m.id} longitude={m.lng} latitude={m.lat}>
+                      <MarkerContent>
+                        <div 
+                          className="w-5 h-5 bg-primary text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 border-white shadow-md cursor-help"
+                          title={`${m.label}. ${m.title} (${m.location})`}
+                        >
+                          {m.label}
+                        </div>
+                      </MarkerContent>
+                    </MapMarker>
+                  ))}
+                </Map>
+              </div>
+            )}
             <div className="p-6 space-y-6">
               <div className="flex justify-between items-center">
                 <h3 className="text-xl font-bold">{t('planner.day_summary')}</h3>

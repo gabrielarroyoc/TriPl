@@ -1,8 +1,16 @@
 import { useCallback, useEffect, useRef } from 'react'
 
 function getMotionMs(name: string, fallback: number) {
-  const value = parseFloat(getComputedStyle(document.documentElement).getPropertyValue(name))
-  return Number.isFinite(value) ? value : fallback
+  const rawValue = getComputedStyle(document.documentElement).getPropertyValue(name).trim()
+  if (!rawValue) return fallback
+  const value = parseFloat(rawValue)
+  if (!Number.isFinite(value)) return fallback
+  if (rawValue.endsWith('ms')) {
+    return value
+  } else if (rawValue.endsWith('s')) {
+    return value * 1000
+  }
+  return value
 }
 
 export function useTextSwap(text: string) {
