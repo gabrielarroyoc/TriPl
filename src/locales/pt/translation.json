@@ -174,6 +174,15 @@
     "with_tripl": "com TriPl",
     "trusted_brands": "Marcas que confiam na gente",
     "destinations_stat": "Destinos",
-    "rating_stat": "Avaliação"
+    "rating_stat": "Avaliação",
+    "or_continue_with": "ou continue com",
+    "oauth_error": "Erro ao iniciar login social.",
+    "oauth_error_title": "Falha no login social",
+    "oauth_completing": "Concluindo autenticação...",
+    "oauth_callback_timeout": "Não foi possível concluir o login social. Tente novamente.",
+    "oauth_provider_disabled": "{{provider}} ainda não está habilitado. Configure no .env e no painel do Supabase.",
+    "oauth_setup_hint": "Configure o provider no Supabase e VITE_OAUTH_GOOGLE_ENABLED",
+    "oauth_setup_hint_apple": "Configure o provider no Supabase e VITE_OAUTH_APPLE_ENABLED",
+    "back_to_login": "Voltar ao login"
   }
 }
