@@ -174,6 +174,15 @@
     "with_tripl": "with TriPl",
     "trusted_brands": "Brands that trust us",
     "destinations_stat": "Destinations",
-    "rating_stat": "Rating"
+    "rating_stat": "Rating",
+    "or_continue_with": "or continue with",
+    "oauth_error": "Could not start social login.",
+    "oauth_error_title": "Social login failed",
+    "oauth_completing": "Completing authentication...",
+    "oauth_callback_timeout": "Could not complete social login. Please try again.",
+    "oauth_provider_disabled": "{{provider}} is not enabled yet. Configure it in .env and the Supabase dashboard.",
+    "oauth_setup_hint": "Configure the provider in Supabase and VITE_OAUTH_GOOGLE_ENABLED",
+    "oauth_setup_hint_apple": "Configure the provider in Supabase and VITE_OAUTH_APPLE_ENABLED",
+    "back_to_login": "Back to login"
   }
 }

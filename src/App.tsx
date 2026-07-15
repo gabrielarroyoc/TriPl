@@ -15,6 +15,7 @@ import DestinationDetails from './pages/DestinationDetails'
 import Explore from './pages/Explore'
 import Home from './pages/Home'
 import Login from './pages/Login'
+import AuthCallback from './pages/AuthCallback'
 import MyDestinations from './pages/MyDestinations'
 import Planner from './pages/Planner'
 import { AuthProvider, useAuth } from './store/AuthContext'
@@ -344,15 +345,18 @@ function AppContent() {
   const location = useLocation()
   const isHomePage = location.pathname === '/'
   const isLoginPage = location.pathname === '/login'
+  const isAuthCallbackPage = location.pathname === '/auth/callback'
+  const hideChrome = isLoginPage || isAuthCallbackPage
 
   return (
     <div className="min-h-screen flex flex-col font-sans transition-colors duration-300">
-      {!isLoginPage && <Navbar />}
+      {!hideChrome && <Navbar />}
       <ToastContainer />
-      <main className={cn("flex-grow", isHomePage || isLoginPage ? "pt-0" : "pt-24")}>
+      <main className={cn("flex-grow", isHomePage || hideChrome ? "pt-0" : "pt-24")}>
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/auth/callback" element={<AuthCallback />} />
 
           <Route
             path="/explore"
@@ -392,7 +396,7 @@ function AppContent() {
           />
         </Routes>
       </main>
-      {!isLoginPage && <Footer />}
+      {!hideChrome && <Footer />}
     </div>
   )
 }

@@ -1,6 +1,10 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
 import {
+  getOAuthRedirectTo,
+  type OAuthProvider,
+} from '../lib/oauth';
+import {
   clearSupabaseAuthStorage,
   supabase,
 } from '../lib/supabase';
@@ -11,6 +15,7 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   signInWithPassword: (email: string, password: string) => Promise<Session | null>;
   signUpWithPassword: (email: string, password: string, name?: string) => Promise<Session | null>;
+  signInWithOAuth: (provider: OAuthProvider) => Promise<void>;
   loading: boolean;
 }
 
@@ -20,6 +25,7 @@ const AuthContext = createContext<AuthContextType>({
   signOut: async () => {},
   signInWithPassword: async () => null,
   signUpWithPassword: async () => null,
+  signInWithOAuth: async () => {},
   loading: true,
 });
 
@@ -137,6 +143,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return data.session;
   };
 
+  const signInWithOAuth = async (provider: OAuthProvider) => {
+    if (!supabase) {
+      throw new Error('Supabase is not configured.');
+    }
+
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider,
+      options: {
+        redirectTo: getOAuthRedirectTo(),
+        queryParams:
+          provider === 'google'
+            ? {
+                access_type: 'offline',
+                prompt: 'consent',
+              }
+            : undefined,
+      },
+    });
+
+    if (error) throw error;
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -145,6 +173,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         signOut,
         signInWithPassword,
         signUpWithPassword,
+        signInWithOAuth,
         loading,
       }}
     >
