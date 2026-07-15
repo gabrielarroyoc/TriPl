@@ -9,7 +9,7 @@ import { useTranslation } from 'react-i18next'
 import { GrainGradient } from '@paper-design/shaders-react'
 import { useStaggerReveal, useTextSwap } from '../hooks/useAuthTransitions'
 import { isSupabaseConfigured } from '../lib/supabase'
-import { isOAuthProviderEnabled, rememberOAuthRedirect, type OAuthProvider } from '../lib/oauth'
+import { isGoogleOAuthEnabled, rememberOAuthRedirect } from '../lib/oauth'
 import { useAuth } from '../store/AuthContext'
 import { cn } from '../lib/utils'
 
@@ -394,38 +394,37 @@ function SocialButtons({
 }) {
   const { t } = useTranslation()
   const { signInWithOAuth } = useAuth()
-  const [oauthLoading, setOauthLoading] = useState<OAuthProvider | null>(null)
+  const [oauthLoading, setOauthLoading] = useState(false)
 
-  const handleOAuth = async (provider: OAuthProvider) => {
+  const googleEnabled = isSupabaseConfigured && isGoogleOAuthEnabled()
+
+  const handleGoogle = async () => {
     if (!isSupabaseConfigured) {
       onError(t('login.supabase_not_configured'))
       return
     }
 
-    if (!isOAuthProviderEnabled(provider)) {
+    if (!isGoogleOAuthEnabled()) {
       onError(
         t('login.oauth_provider_disabled', {
-          provider: provider === 'google' ? 'Google' : 'Apple',
+          provider: 'Google',
           defaultValue: '{{provider}} ainda não está habilitado. Configure no .env e no painel do Supabase.',
         }),
       )
       return
     }
 
-    setOauthLoading(provider)
+    setOauthLoading(true)
     onError(null)
 
     try {
       rememberOAuthRedirect(redirectTo)
-      await signInWithOAuth(provider)
+      await signInWithOAuth('google')
     } catch (err: unknown) {
-      setOauthLoading(null)
+      setOauthLoading(false)
       onError(getAuthErrorMessage(err, t('login.oauth_error', 'Erro ao iniciar login social.')))
     }
   }
-
-  const googleEnabled = isSupabaseConfigured && isOAuthProviderEnabled('google')
-  const appleEnabled = isSupabaseConfigured && isOAuthProviderEnabled('apple')
 
   return (
     <>
@@ -438,53 +437,30 @@ function SocialButtons({
         </span>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <button
-          type="button"
-          disabled={disabled || !googleEnabled || oauthLoading !== null}
-          onClick={() => handleOAuth('google')}
-          title={!googleEnabled ? t('login.oauth_setup_hint', 'Configure o provider no Supabase e VITE_OAUTH_GOOGLE_ENABLED') : undefined}
-          className={cn(
-            'flex items-center justify-center gap-2.5 py-2.5 px-4 rounded-xl border border-white/10 bg-white/5 text-xs font-semibold transition-all',
-            googleEnabled && !disabled && !oauthLoading
-              ? 'text-on-surface hover:bg-white/10 hover:border-white/20 cursor-pointer'
-              : 'text-outline cursor-not-allowed opacity-60',
-          )}
-        >
-          {oauthLoading === 'google' ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" aria-hidden="true">
-              <path fill="#EA4335" d="M5.266 9.765A7.077 7.077 0 0 1 12 4.909c1.69 0 3.218.6 4.418 1.582L19.91 3C17.782 1.145 15.055 0 12 0 7.27 0 3.16 2.7 1.145 6.645l4.12 3.12z" />
-              <path fill="#4285F4" d="M23.455 12.273c0-.818-.073-1.609-.209-2.373H12v4.509h6.427a5.5 5.5 0 0 1-2.386 3.609l3.718 2.882c2.173-2 3.427-4.945 3.427-8.627z" />
-              <path fill="#34A853" d="M19.759 18.018a7.06 7.06 0 0 1-11.49-.918l-4.146 3.2C7.309 23.3 11.236 24 12 24c4.618 0 8.518-1.527 11.355-4.136l-3.596-1.846z" />
-              <path fill="#FBBC05" d="M4.123 20.3a7.077 7.077 0 0 1-.368-2.209c0-.773.136-1.518.368-2.209l-4.12-3.12A11.948 11.948 0 0 0 0 12c0 2.227.609 4.318 1.677 6.136l4.146-3.2z" />
-            </svg>
-          )}
-          Google
-        </button>
-        <button
-          type="button"
-          disabled={disabled || !appleEnabled || oauthLoading !== null}
-          onClick={() => handleOAuth('apple')}
-          title={!appleEnabled ? t('login.oauth_setup_hint_apple', 'Configure o provider no Supabase e VITE_OAUTH_APPLE_ENABLED') : undefined}
-          className={cn(
-            'flex items-center justify-center gap-2.5 py-2.5 px-4 rounded-xl border border-white/10 bg-white/5 text-xs font-semibold transition-all',
-            appleEnabled && !disabled && !oauthLoading
-              ? 'text-on-surface hover:bg-white/10 hover:border-white/20 cursor-pointer'
-              : 'text-outline cursor-not-allowed opacity-60',
-          )}
-        >
-          {oauthLoading === 'apple' ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <svg className="w-4 h-4 fill-on-surface shrink-0" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 4.17c.66-.81 1.11-1.93.99-3.06-.96.04-2.13.64-2.82 1.45-.6.69-1.12 1.83-.98 2.94 1.07.08 2.16-.52 2.81-1.33z" />
-            </svg>
-          )}
-          Apple
-        </button>
-      </div>
+      <button
+        type="button"
+        disabled={disabled || !googleEnabled || oauthLoading}
+        onClick={handleGoogle}
+        title={!googleEnabled ? t('login.oauth_setup_hint', 'Configure o provider no Supabase e VITE_OAUTH_GOOGLE_ENABLED') : undefined}
+        className={cn(
+          'flex w-full items-center justify-center gap-2.5 py-2.5 px-4 rounded-xl border border-white/10 bg-white/5 text-xs font-semibold transition-all',
+          googleEnabled && !disabled && !oauthLoading
+            ? 'text-on-surface hover:bg-white/10 hover:border-white/20 cursor-pointer'
+            : 'text-outline cursor-not-allowed opacity-60',
+        )}
+      >
+        {oauthLoading ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : (
+          <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" aria-hidden="true">
+            <path fill="#EA4335" d="M5.266 9.765A7.077 7.077 0 0 1 12 4.909c1.69 0 3.218.6 4.418 1.582L19.91 3C17.782 1.145 15.055 0 12 0 7.27 0 3.16 2.7 1.145 6.645l4.12 3.12z" />
+            <path fill="#4285F4" d="M23.455 12.273c0-.818-.073-1.609-.209-2.373H12v4.509h6.427a5.5 5.5 0 0 1-2.386 3.609l3.718 2.882c2.173-2 3.427-4.945 3.427-8.627z" />
+            <path fill="#34A853" d="M19.759 18.018a7.06 7.06 0 0 1-11.49-.918l-4.146 3.2C7.309 23.3 11.236 24 12 24c4.618 0 8.518-1.527 11.355-4.136l-3.596-1.846z" />
+            <path fill="#FBBC05" d="M4.123 20.3a7.077 7.077 0 0 1-.368-2.209c0-.773.136-1.518.368-2.209l-4.12-3.12A11.948 11.948 0 0 0 0 12c0 2.227.609 4.318 1.677 6.136l4.146-3.2z" />
+          </svg>
+        )}
+        Google
+      </button>
     </>
   )
 }

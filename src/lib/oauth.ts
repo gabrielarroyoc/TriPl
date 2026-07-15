@@ -1,13 +1,11 @@
-export type OAuthProvider = 'google' | 'apple'
+export type OAuthProvider = 'google'
 
 const OAUTH_REDIRECT_KEY = 'tripl_oauth_redirect'
 
-export function isOAuthProviderEnabled(provider: OAuthProvider): boolean {
-  const envKey =
-    provider === 'google' ? 'VITE_OAUTH_GOOGLE_ENABLED' : 'VITE_OAUTH_APPLE_ENABLED'
-  const value = import.meta.env[envKey]
+export function isGoogleOAuthEnabled(): boolean {
+  const value = import.meta.env.VITE_OAUTH_GOOGLE_ENABLED
 
-  // Default enabled so buttons work as soon as the provider is set up in Supabase.
+  // Default enabled so the button works as soon as Google is set up in Supabase.
   if (value === undefined || value === '') return true
   return value === 'true' || value === '1'
 }

@@ -182,7 +182,6 @@
     "oauth_callback_timeout": "Could not complete social login. Please try again.",
     "oauth_provider_disabled": "{{provider}} is not enabled yet. Configure it in .env and the Supabase dashboard.",
     "oauth_setup_hint": "Configure the provider in Supabase and VITE_OAUTH_GOOGLE_ENABLED",
-    "oauth_setup_hint_apple": "Configure the provider in Supabase and VITE_OAUTH_APPLE_ENABLED",
     "back_to_login": "Back to login"
   }
 }

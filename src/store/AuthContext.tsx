@@ -143,7 +143,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return data.session;
   };
 
-  const signInWithOAuth = async (provider: OAuthProvider) => {
+  const signInWithOAuth = async (provider: OAuthProvider = 'google') => {
     if (!supabase) {
       throw new Error('Supabase is not configured.');
     }
@@ -152,13 +152,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       provider,
       options: {
         redirectTo: getOAuthRedirectTo(),
-        queryParams:
-          provider === 'google'
-            ? {
-                access_type: 'offline',
-                prompt: 'consent',
-              }
-            : undefined,
+        queryParams: {
+          access_type: 'offline',
+          prompt: 'consent',
+        },
       },
     });
 
